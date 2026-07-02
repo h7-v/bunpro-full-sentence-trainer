@@ -89,7 +89,7 @@ bunpro-full-sentence-trainer
 If you are comfortable with Git, you can use:
 
 ```sh
-git clone https://github.com/YOUR_USERNAME/bunpro-full-sentence-trainer.git
+git clone https://github.com/h7-v/bunpro-full-sentence-trainer.git
 cd bunpro-full-sentence-trainer
 ```
 
