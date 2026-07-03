@@ -388,7 +388,7 @@ Each release folder includes a standalone executable, `public/`, `.env.example`,
 - Includes ten built-in demo sentences.
 - Filters practice by Bunpro JLPT level, Anki deck, CSV file, and demo source.
 - Grades answers with an LLM through a Chat Completions-compatible API.
-- Accepts natural answers, not just exact Bunpro wording.
+- Accepts natural answers, not just exact wording.
 - Uses model-provided accepted answer variants for the no-API drill step.
 - Keeps a session history with Previous/Next.
 - Schedules missed answers for short-term retry.
