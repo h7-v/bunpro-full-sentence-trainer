@@ -8,11 +8,14 @@ const answerForm = document.querySelector("#answerForm");
 const answerInput = document.querySelector("#answerInput");
 const hintToggle = document.querySelector("#hintToggle");
 const grammarHint = document.querySelector("#grammarHint");
+const grammarHintMeta = document.querySelector("#grammarHintMeta");
 const jlptLevel = document.querySelector("#jlptLevel");
 const grammarTitle = document.querySelector("#grammarTitle");
 const grammarMeaning = document.querySelector("#grammarMeaning");
 const sourceContext = document.querySelector("#sourceContext");
 const englishPrompt = document.querySelector("#englishPrompt");
+const gettingStartedPanel = document.querySelector("#gettingStartedPanel");
+const startSetupButton = document.querySelector("#startSetupButton");
 const referenceJapanese = document.querySelector("#referenceJapanese");
 const resultPanel = document.querySelector("#resultPanel");
 const verdictPill = document.querySelector("#verdictPill");
@@ -29,6 +32,19 @@ const retryBadge = document.querySelector("#retryBadge");
 const jlptFilter = document.querySelector("#jlptFilter");
 const jlptFilterOptions = document.querySelector("#jlptFilterOptions");
 const importStatusPanel = document.querySelector("#importStatusPanel");
+const openSettingsButton = document.querySelector("#openSettingsButton");
+const settingsModal = document.querySelector("#settingsModal");
+const closeSettingsButton = document.querySelector("#closeSettingsButton");
+const startTabButton = document.querySelector("#startTabButton");
+const settingsTabButtons = Array.from(document.querySelectorAll("[data-settings-tab]"));
+const settingsTabPanels = Array.from(document.querySelectorAll("[data-settings-panel]"));
+const setupLlmButton = document.querySelector("#setupLlmButton");
+const setupAnkiButton = document.querySelector("#setupAnkiButton");
+const setupBunproButton = document.querySelector("#setupBunproButton");
+const setupCsvButton = document.querySelector("#setupCsvButton");
+const startDemoSentencesToggle = document.querySelector("#startDemoSentencesToggle");
+const demoSentencesToggle = document.querySelector("#demoSentencesToggle");
+const demoSentencesStatus = document.querySelector("#demoSentencesStatus");
 const bunproSettingsForm = document.querySelector("#bunproSettingsForm");
 const bunproTokenInput = document.querySelector("#bunproTokenInput");
 const saveBunproTokenButton = document.querySelector("#saveBunproTokenButton");
@@ -39,6 +55,12 @@ const llmApiKeyInput = document.querySelector("#llmApiKeyInput");
 const llmModelInput = document.querySelector("#llmModelInput");
 const saveLlmSettingsButton = document.querySelector("#saveLlmSettingsButton");
 const llmSettingsStatus = document.querySelector("#llmSettingsStatus");
+const feedbackSettingsForm = document.querySelector("#feedbackSettingsForm");
+const feedbackLanguageInputs = Array.from(document.querySelectorAll("input[name='feedbackLanguage']"));
+const customInstructionsInput = document.querySelector("#customInstructionsInput");
+const customInstructionsCounter = document.querySelector("#customInstructionsCounter");
+const saveFeedbackSettingsButton = document.querySelector("#saveFeedbackSettingsButton");
+const feedbackSettingsStatus = document.querySelector("#feedbackSettingsStatus");
 const ankiConnectButton = document.querySelector("#ankiConnectButton");
 const ankiDeckSelect = document.querySelector("#ankiDeckSelect");
 const ankiEnglishFieldSelect = document.querySelector("#ankiEnglishFieldSelect");
@@ -49,6 +71,130 @@ const ankiImportButton = document.querySelector("#ankiImportButton");
 const ankiStatus = document.querySelector("#ankiStatus");
 const ankiPreview = document.querySelector("#ankiPreview");
 const ankiFields = Array.from(document.querySelectorAll(".anki-field"));
+const csvFileInput = document.querySelector("#csvFileInput");
+const csvSourceNameInput = document.querySelector("#csvSourceNameInput");
+const csvColumnFields = document.querySelector("#csvColumnFields");
+const csvEnglishColumnSelect = document.querySelector("#csvEnglishColumnSelect");
+const csvJapaneseColumnSelect = document.querySelector("#csvJapaneseColumnSelect");
+const csvHintColumnSelect = document.querySelector("#csvHintColumnSelect");
+const csvPreviewButton = document.querySelector("#csvPreviewButton");
+const csvImportButton = document.querySelector("#csvImportButton");
+const csvStatus = document.querySelector("#csvStatus");
+const csvPreview = document.querySelector("#csvPreview");
+const gettingStartedSeenKey = "jfst-getting-started-seen";
+const demoSentencesEnabledKey = "jfst-demo-sentences-enabled";
+const demoSentences = [
+  {
+    id: "demo:n5:1",
+    source: "demo",
+    sourceLabel: "Demo",
+    sourceContext: "From demo sentences",
+    grammarHint: "Use が to mark the subject.",
+    practiceFilterId: "demo:n5",
+    practiceFilterLabel: "Demo N5",
+    english: "The sea is beautiful.",
+    japanese: "海がきれいです。"
+  },
+  {
+    id: "demo:n5:2",
+    source: "demo",
+    sourceLabel: "Demo",
+    sourceContext: "From demo sentences",
+    grammarHint: "Use を to mark the direct object.",
+    practiceFilterId: "demo:n5",
+    practiceFilterLabel: "Demo N5",
+    english: "I drink water.",
+    japanese: "水を飲みます。"
+  },
+  {
+    id: "demo:n5:3",
+    source: "demo",
+    sourceLabel: "Demo",
+    sourceContext: "From demo sentences",
+    grammarHint: "Use に for the destination.",
+    practiceFilterId: "demo:n5",
+    practiceFilterLabel: "Demo N5",
+    english: "I went to school yesterday.",
+    japanese: "昨日学校に行きました。"
+  },
+  {
+    id: "demo:n5:4",
+    source: "demo",
+    sourceLabel: "Demo",
+    sourceContext: "From demo sentences",
+    grammarHint: "これは points to something near the speaker.",
+    practiceFilterId: "demo:n5",
+    practiceFilterLabel: "Demo N5",
+    english: "This is a book.",
+    japanese: "これは本です。"
+  },
+  {
+    id: "demo:n5:5",
+    source: "demo",
+    sourceLabel: "Demo",
+    sourceContext: "From demo sentences",
+    grammarHint: "Use います for living things.",
+    practiceFilterId: "demo:n5",
+    practiceFilterLabel: "Demo N5",
+    english: "There is a cat under the table.",
+    japanese: "テーブルの下に猫がいます。"
+  },
+  {
+    id: "demo:n5:6",
+    source: "demo",
+    sourceLabel: "Demo",
+    sourceContext: "From demo sentences",
+    grammarHint: "Use で for the place where an action happens.",
+    practiceFilterId: "demo:n5",
+    practiceFilterLabel: "Demo N5",
+    english: "I study Japanese at home.",
+    japanese: "家で日本語を勉強します。"
+  },
+  {
+    id: "demo:n5:7",
+    source: "demo",
+    sourceLabel: "Demo",
+    sourceContext: "From demo sentences",
+    grammarHint: "Use と to connect nouns.",
+    practiceFilterId: "demo:n5",
+    practiceFilterLabel: "Demo N5",
+    english: "I ate bread and eggs.",
+    japanese: "パンと卵を食べました。"
+  },
+  {
+    id: "demo:n5:8",
+    source: "demo",
+    sourceLabel: "Demo",
+    sourceContext: "From demo sentences",
+    grammarHint: "Use じゃありません for the negative of です.",
+    practiceFilterId: "demo:n5",
+    practiceFilterLabel: "Demo N5",
+    english: "That person is not a student.",
+    japanese: "あの人は学生じゃありません。"
+  },
+  {
+    id: "demo:n5:9",
+    source: "demo",
+    sourceLabel: "Demo",
+    sourceContext: "From demo sentences",
+    grammarHint: "Use ませんでした for polite past negative verbs.",
+    practiceFilterId: "demo:n5",
+    practiceFilterLabel: "Demo N5",
+    english: "I did not watch TV yesterday.",
+    japanese: "昨日テレビを見ませんでした。"
+  },
+  {
+    id: "demo:n5:10",
+    source: "demo",
+    sourceLabel: "Demo",
+    sourceContext: "From demo sentences",
+    grammarHint: "Use から for a starting time.",
+    practiceFilterId: "demo:n5",
+    practiceFilterLabel: "Demo N5",
+    english: "The class starts at nine o'clock.",
+    japanese: "授業は九時から始まります。"
+  }
+];
 
 let currentSentence = null;
 let currentCorrectAnswers = [];
@@ -57,11 +203,14 @@ let sessionHistory = [];
 let sessionIndex = -1;
 let nextSessionEntryId = 1;
 let retryQueue = [];
+let recentQuestionIds = [];
 let sentencePool = [];
 let availablePracticeFilters = [];
 let selectedPracticeFilters = new Set();
 let busy = false;
 let ankiBusy = false;
+let csvBusy = false;
+let csvText = "";
 
 syncButton.addEventListener("click", syncBunpro);
 previousButton.addEventListener("click", showPreviousSentence);
@@ -74,12 +223,31 @@ answerInput.addEventListener("input", saveCurrentDraft);
 drillInput.addEventListener("input", saveCurrentDraft);
 retryDelayInput.addEventListener("change", updateRetryDelayPreference);
 jlptFilterOptions.addEventListener("change", updateJlptFilterPreference);
+openSettingsButton.addEventListener("click", () => openSettingsModal("start"));
+startSetupButton.addEventListener("click", () => openSettingsModal("start"));
+closeSettingsButton.addEventListener("click", closeSettingsModal);
+settingsModal.addEventListener("click", closeSettingsModalFromBackdrop);
+document.addEventListener("keydown", closeSettingsModalFromKeyboard);
+settingsTabButtons.forEach((button) => {
+  button.addEventListener("click", () => showSettingsTab(button.dataset.settingsTab));
+});
+setupLlmButton.addEventListener("click", () => showSettingsTab("llm"));
+setupAnkiButton.addEventListener("click", () => showSettingsTab("anki"));
+setupBunproButton.addEventListener("click", () => showSettingsTab("bunpro"));
+setupCsvButton.addEventListener("click", () => showSettingsTab("csv"));
+startDemoSentencesToggle.addEventListener("change", updateDemoSentencesPreference);
+demoSentencesToggle.addEventListener("change", updateDemoSentencesPreference);
 bunproSettingsForm.addEventListener("submit", saveBunproSettings);
 llmSettingsForm.addEventListener("submit", saveLlmSettings);
+feedbackSettingsForm.addEventListener("submit", saveFeedbackSettings);
+customInstructionsInput.addEventListener("input", updateCustomInstructionsCounter);
 ankiConnectButton.addEventListener("click", loadAnkiDecks);
 ankiDeckSelect.addEventListener("change", loadAnkiFields);
 ankiPreviewButton.addEventListener("click", previewAnkiImport);
 ankiImportButton.addEventListener("click", importAnkiSentences);
+csvFileInput.addEventListener("change", loadCsvFile);
+csvPreviewButton.addEventListener("click", previewCsvImport);
+csvImportButton.addEventListener("click", importCsvSentences);
 setInterval(updateRetryStatus, 15000);
 
 boot();
@@ -88,10 +256,11 @@ async function boot() {
   try {
     initializeHintPreference();
     initializeRetryDelayPreference();
+    initializeDemoSentencesPreference();
     const status = await api("/api/status");
     renderStatus(status);
     updateSettingsPlaceholders(status);
-    if (status.sentenceCount > 0) {
+    if (getAvailableSentenceCount(status) > 0) {
       await loadSentencePool();
       await showNextSentence();
     } else {
@@ -102,8 +271,83 @@ async function boot() {
   }
 }
 
+function openSettingsModal(tab = "start") {
+  showSettingsTab(getAvailableSettingsTab(tab));
+  settingsModal.classList.remove("hidden");
+  document.body.classList.add("modal-open");
+  markGettingStartedSeen();
+  closeSettingsButton.focus();
+}
+
+function closeSettingsModal() {
+  settingsModal.classList.add("hidden");
+  document.body.classList.remove("modal-open");
+  openSettingsButton.focus();
+}
+
+function closeSettingsModalFromBackdrop(event) {
+  if (event.target === settingsModal) closeSettingsModal();
+}
+
+function closeSettingsModalFromKeyboard(event) {
+  if (event.key === "Escape" && !settingsModal.classList.contains("hidden")) {
+    closeSettingsModal();
+  }
+}
+
+function showSettingsTab(tab) {
+  const nextTab = getAvailableSettingsTab(tab);
+  for (const button of settingsTabButtons) {
+    const isActive = button.dataset.settingsTab === nextTab;
+    button.classList.toggle("active", isActive);
+    button.setAttribute("aria-selected", String(isActive));
+  }
+
+  for (const panel of settingsTabPanels) {
+    const isActive = panel.dataset.settingsPanel === nextTab;
+    panel.classList.toggle("hidden", !isActive);
+  }
+}
+
+function renderGettingStarted(status) {
+  const hasImportedSentences = Number(status.sentenceCount || 0) > 0;
+  const needsSetup = status.hasLlmCredentials === false || !hasImportedSentences;
+  const setupComplete = !needsSetup;
+  gettingStartedPanel.classList.toggle("hidden", !needsSetup);
+  startTabButton.classList.toggle("hidden", setupComplete);
+  if (setupComplete && startTabButton.classList.contains("active")) {
+    showSettingsTab("anki");
+  }
+
+  if (needsSetup && !hasSeenGettingStarted()) {
+    window.requestAnimationFrame(() => openSettingsModal("start"));
+  }
+}
+
+function getAvailableSettingsTab(tab) {
+  if (tab !== "start" || !startTabButton.classList.contains("hidden")) return tab;
+  return "anki";
+}
+
+function hasSeenGettingStarted() {
+  try {
+    return window.localStorage.getItem(gettingStartedSeenKey) === "true";
+  } catch {
+    return false;
+  }
+}
+
+function markGettingStartedSeen() {
+  try {
+    window.localStorage.setItem(gettingStartedSeenKey, "true");
+  } catch {
+    // Local storage can be unavailable in stricter browser settings.
+  }
+}
+
 async function syncBunpro() {
-  setBusy(true, "Importing Bunpro grammar points and sentences...");
+  setBusy(true, "Importing Bunpro grammar points and sentences... This may take a while.");
+  bunproSettingsStatus.textContent = "Importing Bunpro grammar points and sentences... This may take a while.";
   try {
     await api("/api/sync", { method: "POST" });
     const status = await api("/api/status");
@@ -112,8 +356,10 @@ async function syncBunpro() {
     await loadSentencePool({ resetLevels: true });
     resetSessionHistory();
     await showNextSentence();
+    bunproSettingsStatus.textContent = `Imported ${status.bunproSentenceCount || 0} Bunpro sentences.`;
   } catch (error) {
     statusText.textContent = error.message;
+    bunproSettingsStatus.textContent = error.message;
   } finally {
     setBusy(false);
   }
@@ -133,6 +379,7 @@ async function showNextSentence() {
   if (retry) {
     sessionHistory.push(createSessionEntry(retry.sentence, { source: "retry", retryOf: retry.sourceEntryId }));
     sessionIndex = sessionHistory.length - 1;
+    rememberAskedSentence(retry.sentence);
     renderSessionEntry(sessionHistory[sessionIndex], { focus: true });
     restoreStatusText();
     updateRetryStatus();
@@ -162,9 +409,10 @@ async function showNextSentence() {
     return;
   }
 
-  const sentence = chooseRandom(filteredSentences);
+  const sentence = chooseRandomQuestion(filteredSentences);
   sessionHistory.push(createSessionEntry(sentence, { source: "random" }));
   sessionIndex = sessionHistory.length - 1;
+  rememberAskedSentence(sentence);
   renderSessionEntry(sessionHistory[sessionIndex], { focus: true });
   restoreStatusText();
   updateNavigationState();
@@ -188,6 +436,7 @@ function skipToMissed() {
   }
   sessionHistory.push(createSessionEntry(retry.sentence, { source: "retry", retryOf: retry.sourceEntryId }));
   sessionIndex = sessionHistory.length - 1;
+  rememberAskedSentence(retry.sentence);
   renderSessionEntry(sessionHistory[sessionIndex], { focus: true });
   restoreStatusText();
   updateRetryStatus();
@@ -233,13 +482,21 @@ async function gradeAnswer(event) {
 function renderStatus(status) {
   const llmStatus = status.hasLlmCredentials === false ? "LLM key missing" : `Grading with ${status.model || "configured model"}`;
   const sourceParts = [];
-  const totalSentences = Number(status.sentenceCount || 0);
+  const totalSentences = getAvailableSentenceCount(status);
   if (status.ankiSentenceCount) {
     sourceParts.push(`Anki ${status.ankiSentenceCount}`);
   }
 
+  if (status.csvSentenceCount) {
+    sourceParts.push(`CSV ${status.csvSentenceCount}`);
+  }
+
   if (status.bunproSentenceCount) {
     sourceParts.push(`Bunpro ${status.bunproSentenceCount}`);
+  }
+
+  if (isDemoSentencesEnabled()) {
+    sourceParts.push(`Demo ${demoSentences.length}`);
   }
 
   const importStatus = totalSentences
@@ -247,6 +504,7 @@ function renderStatus(status) {
     : "No imported sentences yet";
   lastStatusText = `${llmStatus}. ${importStatus}.`;
   renderImportStatusPanel(status);
+  renderGettingStarted(status);
   restoreStatusText();
 }
 
@@ -270,6 +528,26 @@ function renderImportStatusPanel(status) {
     });
   }
 
+  if (status.csvSentenceCount) {
+    const csvFiles = Array.isArray(status.csvFiles) ? status.csvFiles : [];
+    const lastCsv = csvFiles
+      .filter((item) => item.syncedAt)
+      .sort((a, b) => new Date(b.syncedAt) - new Date(a.syncedAt))[0];
+    rows.push({
+      source: "CSV",
+      details: `${status.csvSentenceCount} sentences${csvFiles.length > 1 ? `, ${csvFiles.length} files` : ""}`,
+      importedAt: lastCsv?.syncedAt ? `Last import ${formatSyncTime(lastCsv.syncedAt)}` : ""
+    });
+  }
+
+  if (isDemoSentencesEnabled()) {
+    rows.push({
+      source: "Demo",
+      details: `${demoSentences.length} built-in sentences`,
+      importedAt: ""
+    });
+  }
+
   importStatusPanel.classList.toggle("hidden", rows.length === 0);
 
   for (const row of rows) {
@@ -290,11 +568,21 @@ function renderImportStatusPanel(status) {
   }
 }
 
+function getAvailableSentenceCount(status) {
+  return Number(status.sentenceCount || 0) + (isDemoSentencesEnabled() ? demoSentences.length : 0);
+}
+
 function updateSettingsPlaceholders(status) {
   bunproTokenInput.placeholder = status.hasBunproToken ? "Token saved" : "Paste token to save";
   llmBaseUrlInput.placeholder = status.llmBaseUrl || "https://generativelanguage.googleapis.com/v1beta/openai";
   llmApiKeyInput.placeholder = status.hasLlmCredentials ? "Key saved" : "Paste key to save";
   llmModelInput.placeholder = status.model || "gemini-3.5-flash";
+  const feedbackLanguage = String(status.feedbackLanguage || "english").toLowerCase();
+  for (const input of feedbackLanguageInputs) {
+    input.checked = input.value === feedbackLanguage;
+  }
+  customInstructionsInput.value = status.customInstructions || "";
+  updateCustomInstructionsCounter();
 }
 
 async function saveBunproSettings(event) {
@@ -353,6 +641,37 @@ async function saveLlmSettings(event) {
   } finally {
     setSettingsBusy(false);
   }
+}
+
+async function saveFeedbackSettings(event) {
+  event.preventDefault();
+  const feedbackLanguage = getSelectedFeedbackLanguage();
+  const customInstructions = customInstructionsInput.value.trim();
+
+  setSettingsBusy(true, "Saving model personalisation...");
+  try {
+    await api("/api/settings", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ feedbackLanguage, customInstructions })
+    });
+    const status = await api("/api/status");
+    renderStatus(status);
+    updateSettingsPlaceholders(status);
+    feedbackSettingsStatus.textContent = "Model personalisation saved to .env.";
+  } catch (error) {
+    feedbackSettingsStatus.textContent = error.message;
+  } finally {
+    setSettingsBusy(false);
+  }
+}
+
+function getSelectedFeedbackLanguage() {
+  return feedbackLanguageInputs.find((input) => input.checked)?.value || "english";
+}
+
+function updateCustomInstructionsCounter() {
+  customInstructionsCounter.textContent = `${customInstructionsInput.value.length} / ${customInstructionsInput.maxLength} characters`;
 }
 
 async function loadAnkiDecks() {
@@ -430,7 +749,7 @@ async function previewAnkiImport() {
 async function importAnkiSentences() {
   const options = getAnkiImportOptions();
   if (!options) return;
-  setAnkiBusy(true, "Importing Anki sentences...");
+  setAnkiBusy(true, "Importing Anki sentences... This may take a while.");
   try {
     const result = await api("/api/anki/import", {
       method: "POST",
@@ -502,6 +821,152 @@ function renderAnkiPreview(payload) {
   }
 }
 
+async function loadCsvFile() {
+  const file = csvFileInput.files?.[0];
+  csvText = "";
+  csvPreview.classList.add("hidden");
+  csvPreview.textContent = "";
+  csvColumnFields.classList.add("hidden");
+  csvSourceNameInput.classList.add("hidden");
+  setCsvControlsDisabled(busy || csvBusy);
+
+  if (!file) {
+    csvStatus.textContent = "";
+    return;
+  }
+
+  setCsvBusy(true, "Reading CSV file...");
+  try {
+    csvText = await file.text();
+    csvSourceNameInput.value = file.name.replace(/\.csv$/i, "");
+    csvSourceNameInput.classList.remove("hidden");
+    await previewCsvImport();
+  } catch (error) {
+    csvStatus.textContent = error.message;
+  } finally {
+    setCsvBusy(false);
+  }
+}
+
+async function previewCsvImport() {
+  if (!csvText) {
+    csvStatus.textContent = "Choose a CSV file first.";
+    return;
+  }
+
+  setCsvBusy(true, "Previewing CSV...");
+  try {
+    const payload = await api("/api/csv/preview", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        fileName: csvFileInput.files?.[0]?.name || csvSourceNameInput.value,
+        sourceName: csvSourceNameInput.value,
+        csvText,
+        englishColumn: csvColumnFields.classList.contains("hidden") ? "" : csvEnglishColumnSelect.selectedIndex,
+        japaneseColumn: csvColumnFields.classList.contains("hidden") ? "" : csvJapaneseColumnSelect.selectedIndex,
+        hintColumn: csvColumnFields.classList.contains("hidden") ? "" : csvHintColumnSelect.selectedIndex - 1
+      })
+    });
+    renderCsvColumns(payload);
+    renderCsvPreview(payload);
+    csvStatus.textContent = `${payload.rowCount || 0} rows found. ${payload.usableSentenceCount || 0} usable sentence pairs.`;
+  } catch (error) {
+    csvStatus.textContent = error.message;
+  } finally {
+    setCsvBusy(false);
+  }
+}
+
+async function importCsvSentences() {
+  const options = getCsvImportOptions();
+  if (!options) return;
+  setCsvBusy(true, "Importing CSV sentences...");
+  try {
+    const result = await api("/api/csv/import", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(options)
+    });
+    const status = await api("/api/status");
+    renderStatus(status);
+    await loadSentencePool({ resetLevels: true });
+    resetSessionHistory();
+    await showNextSentence();
+    const skipped = result.skippedRowCount ? ` ${result.skippedRowCount} rows skipped.` : "";
+    const truncated = result.truncatedFieldCount ? ` ${result.truncatedFieldCount} long fields shortened.` : "";
+    csvStatus.textContent = `Imported ${result.importedSentenceCount || 0} sentence pairs from ${result.sourceName}.${skipped}${truncated}`;
+  } catch (error) {
+    csvStatus.textContent = error.message;
+  } finally {
+    setCsvBusy(false);
+  }
+}
+
+function renderCsvColumns(payload) {
+  const columns = payload.columns || [];
+  populateSelect(csvEnglishColumnSelect, columns.map((column) => column.label));
+  populateSelect(csvJapaneseColumnSelect, columns.map((column) => column.label));
+  populateSelect(csvHintColumnSelect, columns.map((column) => column.label), { blankLabel: "No hint" });
+
+  const selected = payload.selectedColumns || {};
+  if (selected.englishColumn >= 0) csvEnglishColumnSelect.selectedIndex = selected.englishColumn;
+  if (selected.japaneseColumn >= 0) csvJapaneseColumnSelect.selectedIndex = selected.japaneseColumn;
+  if (selected.hintColumn >= 0) csvHintColumnSelect.selectedIndex = selected.hintColumn + 1;
+
+  csvColumnFields.classList.toggle("hidden", columns.length === 0);
+  setCsvControlsDisabled(busy || csvBusy);
+}
+
+function renderCsvPreview(payload) {
+  csvPreview.textContent = "";
+  csvPreview.classList.remove("hidden");
+  const sentences = payload.preview || [];
+  for (const sentence of sentences) {
+    const row = document.createElement("div");
+    row.className = "anki-preview-row";
+
+    const english = document.createElement("p");
+    english.textContent = sentence.english;
+
+    const japanese = document.createElement("p");
+    japanese.textContent = sentence.japanese;
+
+    row.append(english, japanese);
+    if (sentence.grammarHint) {
+      const hint = document.createElement("p");
+      hint.textContent = `Hint: ${sentence.grammarHint}`;
+      row.append(hint);
+    }
+    csvPreview.append(row);
+  }
+
+  if (sentences.length === 0) {
+    const empty = document.createElement("div");
+    empty.className = "anki-preview-row";
+    const message = document.createElement("p");
+    message.textContent = "No usable sentence pairs found with the selected columns.";
+    empty.append(message);
+    csvPreview.append(empty);
+  }
+}
+
+function getCsvImportOptions() {
+  if (!csvText) {
+    csvStatus.textContent = "Choose a CSV file first.";
+    return null;
+  }
+  const sourceName = csvSourceNameInput.value.trim() || csvFileInput.files?.[0]?.name || "CSV import";
+  const englishColumn = csvEnglishColumnSelect.selectedIndex;
+  const japaneseColumn = csvJapaneseColumnSelect.selectedIndex;
+  const hintColumn = csvHintColumnSelect.value ? csvHintColumnSelect.selectedIndex - 1 : -1;
+  if (englishColumn < 0 || japaneseColumn < 0) {
+    csvStatus.textContent = "Choose English and Japanese columns first.";
+    return null;
+  }
+  return { sourceName, csvText, englishColumn, japaneseColumn, hintColumn };
+}
+
 function populateSelect(select, values, options = {}) {
   select.textContent = "";
   if (options.blankLabel) {
@@ -529,7 +994,16 @@ function selectLikelyField(select, candidates) {
 async function loadSentencePool(options = {}) {
   const payload = await api("/api/sentences");
   sentencePool = Array.isArray(payload.sentences) ? payload.sentences : [];
+  if (isDemoSentencesEnabled()) {
+    sentencePool = [...sentencePool, ...demoSentences];
+  }
   availablePracticeFilters = normalizePracticeFilters(payload.practiceFilters || collectPracticeFilters(sentencePool));
+  if (isDemoSentencesEnabled()) {
+    availablePracticeFilters = normalizePracticeFilters([
+      ...availablePracticeFilters,
+      { id: "demo:n5", label: "Demo N5", source: "demo" }
+    ]);
+  }
   renderJlptFilter(availablePracticeFilters, options);
 }
 
@@ -612,12 +1086,20 @@ function normalizePracticeFilters(filters) {
 
 function getSentencePracticeFilterId(sentence) {
   if (sentence.practiceFilterId) return sentence.practiceFilterId;
+  if (sentence.source === "demo") return "demo:n5";
+  if (sentence.source === "csv") return `csv:${sentence.csvSourceName || sentence.sourceLabel || "CSV import"}`;
   if (sentence.source === "anki") return `anki:${sentence.ankiDeck || sentence.sourceLabel || sentence.grammarTitle || "Anki"}`;
   const level = normalizeJlptLevel(sentence.jlptLevel);
   return level ? `bunpro:${level}` : "bunpro:unknown";
 }
 
 function formatPracticeFilterLabel(sentence) {
+  if (sentence.source === "demo") {
+    return "Demo N5";
+  }
+  if (sentence.source === "csv") {
+    return `CSV ${sentence.csvSourceName || sentence.sourceLabel || "import"}`;
+  }
   if (sentence.source === "anki") {
     return `Anki ${sentence.ankiDeck || sentence.sourceLabel || sentence.grammarTitle || "deck"}`;
   }
@@ -641,11 +1123,22 @@ function compareJlptLevels(a, b) {
 }
 
 function comparePracticeFilters(a, b) {
-  const aSource = a.source || (a.id.startsWith("bunpro:") ? "bunpro" : "anki");
-  const bSource = b.source || (b.id.startsWith("bunpro:") ? "bunpro" : "anki");
-  if (aSource !== bSource) return aSource === "bunpro" ? -1 : 1;
+  const aSource = a.source || getPracticeSourceFromId(a.id);
+  const bSource = b.source || getPracticeSourceFromId(b.id);
+  if (aSource !== bSource) return getPracticeSourceOrder(aSource) - getPracticeSourceOrder(bSource);
   if (aSource === "bunpro") return compareJlptLevels(a.id.replace(/^bunpro:/, ""), b.id.replace(/^bunpro:/, ""));
   return a.label.localeCompare(b.label);
+}
+
+function getPracticeSourceFromId(id) {
+  if (String(id || "").startsWith("bunpro:")) return "bunpro";
+  if (String(id || "").startsWith("csv:")) return "csv";
+  if (String(id || "").startsWith("demo:")) return "demo";
+  return "anki";
+}
+
+function getPracticeSourceOrder(source) {
+  return { bunpro: 0, anki: 1, csv: 2, demo: 3 }[source] ?? 4;
 }
 
 function formatJlptLabel(level) {
@@ -677,13 +1170,36 @@ function renderSentence(sentence, options = {}) {
   answerInput.value = "";
   drillInput.value = "";
   sourceContext.textContent = sentence.sourceContext || "From imported sentences";
-  jlptLevel.textContent = sentence.jlptLevel || "-";
-  grammarTitle.textContent = sentence.grammarTitle || "Grammar point";
-  grammarMeaning.textContent = sentence.grammarMeaning || sentence.grammarHint || "";
+  const usesPlainHint = sentence.source === "anki" || sentence.source === "csv" || sentence.source === "demo";
+  grammarHint.classList.toggle("anki-hint", usesPlainHint);
+  grammarHintMeta.classList.toggle("hidden", usesPlainHint);
+  if (usesPlainHint) {
+    grammarMeaning.textContent = sentence.grammarHint || sentence.grammarMeaning || "";
+  } else {
+    jlptLevel.textContent = sentence.jlptLevel || "-";
+    grammarTitle.textContent = sentence.grammarTitle || "Grammar point";
+    grammarMeaning.textContent = sentence.grammarMeaning || sentence.grammarHint || "";
+  }
   englishPrompt.textContent = sentence.english || "";
   referenceJapanese.textContent = sentence.japanese || "";
   renderHintVisibility();
   if (options.focus !== false) answerInput.focus();
+}
+
+function renderEmptySentenceState() {
+  currentSentence = null;
+  currentCorrectAnswers = [];
+  resultPanel.classList.add("hidden");
+  drillForm.classList.add("hidden");
+  retryBadge.classList.add("hidden");
+  sourceContext.textContent = "Import sentences to begin.";
+  englishPrompt.textContent = "Import Bunpro, Anki, or CSV sentences to begin.";
+  grammarMeaning.textContent = "";
+  referenceJapanese.textContent = "";
+  answerInput.value = "";
+  drillInput.value = "";
+  renderHintVisibility();
+  updateNavigationState();
 }
 
 function renderGrade(result) {
@@ -753,6 +1269,7 @@ function resetSessionHistory() {
   sessionHistory = [];
   sessionIndex = -1;
   retryQueue = [];
+  recentQuestionIds = [];
   updateNavigationState();
   updateRetryStatus();
 }
@@ -849,9 +1366,49 @@ function initializeRetryDelayPreference() {
   updateRetryStatus();
 }
 
+function initializeDemoSentencesPreference() {
+  setDemoSentencesCheckboxes(isDemoSentencesEnabled());
+  renderDemoSentencesStatus();
+}
+
 function updateHintPreference() {
   localStorage.setItem("bunproTrainer.showGrammarHints", String(hintToggle.checked));
   renderHintVisibility();
+}
+
+async function updateDemoSentencesPreference(event) {
+  const isEnabled = event.target.checked;
+  setDemoSentencesCheckboxes(isEnabled);
+  localStorage.setItem(demoSentencesEnabledKey, String(isEnabled));
+  renderDemoSentencesStatus();
+  resetSessionHistory();
+  try {
+    const status = await api("/api/status");
+    renderStatus(status);
+    await loadSentencePool({ resetLevels: true });
+    if (sentencePool.length > 0) {
+      await showNextSentence();
+    } else {
+      renderEmptySentenceState();
+    }
+  } catch (error) {
+    demoSentencesStatus.textContent = error.message;
+  }
+}
+
+function isDemoSentencesEnabled() {
+  return localStorage.getItem(demoSentencesEnabledKey) === "true";
+}
+
+function renderDemoSentencesStatus() {
+  demoSentencesStatus.textContent = isDemoSentencesEnabled()
+    ? `${demoSentences.length} demo sentences enabled.`
+    : "Demo sentences disabled.";
+}
+
+function setDemoSentencesCheckboxes(isEnabled) {
+  startDemoSentencesToggle.checked = isEnabled;
+  demoSentencesToggle.checked = isEnabled;
 }
 
 function updateRetryDelayPreference() {
@@ -862,7 +1419,10 @@ function updateRetryDelayPreference() {
 }
 
 function renderHintVisibility() {
-  grammarHint.classList.toggle("hidden", !hintToggle.checked);
+  const hintText = String(currentSentence?.grammarHint || currentSentence?.grammarMeaning || "").trim();
+  const usesPlainHint = currentSentence?.source === "anki" || currentSentence?.source === "csv" || currentSentence?.source === "demo";
+  const hasVisibleHint = usesPlainHint ? Boolean(hintText) : Boolean(currentSentence);
+  grammarHint.classList.toggle("hidden", !hintToggle.checked || !hasVisibleHint);
 }
 
 function getRetryDelayMinutes() {
@@ -909,6 +1469,31 @@ function chooseRandom(items) {
   return items[Math.floor(Math.random() * items.length)] || null;
 }
 
+function chooseRandomQuestion(sentences) {
+  const recentLimit = Math.max(0, Math.min(9, sentences.length - 1));
+  if (recentLimit === 0) return chooseRandom(sentences);
+
+  const blockedIds = new Set(recentQuestionIds.slice(-recentLimit));
+  const candidates = sentences.filter((sentence) => !blockedIds.has(getSentenceQuestionId(sentence)));
+  return chooseRandom(candidates.length > 0 ? candidates : sentences);
+}
+
+function rememberAskedSentence(sentence) {
+  const id = getSentenceQuestionId(sentence);
+  if (!id) return;
+  recentQuestionIds.push(id);
+  const maxTrackedQuestions = Math.max(0, Math.min(9, sentencePool.length - 1));
+  if (maxTrackedQuestions === 0) {
+    recentQuestionIds = [];
+  } else if (recentQuestionIds.length > maxTrackedQuestions) {
+    recentQuestionIds = recentQuestionIds.slice(-maxTrackedQuestions);
+  }
+}
+
+function getSentenceQuestionId(sentence) {
+  return String(sentence?.id || `${sentence?.source || ""}:${sentence?.english || ""}:${sentence?.japanese || ""}`);
+}
+
 function formatSyncTime(isoTimestamp) {
   const date = new Date(isoTimestamp);
   if (Number.isNaN(date.getTime())) return "time unknown";
@@ -922,6 +1507,7 @@ function setBusy(isBusy, message) {
   busy = isBusy;
   syncButton.disabled = isBusy;
   setAnkiControlsDisabled(isBusy || ankiBusy);
+  setCsvControlsDisabled(isBusy || csvBusy);
   updateNavigationState();
   if (message) statusText.textContent = message;
   if (!isBusy && !message) restoreStatusText();
@@ -943,12 +1529,32 @@ function setAnkiControlsDisabled(isDisabled) {
   ankiImportButton.disabled = isDisabled;
 }
 
+function setCsvBusy(isBusy, message) {
+  csvBusy = isBusy;
+  setCsvControlsDisabled(isBusy || busy);
+  if (message) csvStatus.textContent = message;
+}
+
+function setCsvControlsDisabled(isDisabled) {
+  const hasCsvText = Boolean(csvText);
+  const hasColumns = !csvColumnFields.classList.contains("hidden");
+  csvFileInput.disabled = isDisabled;
+  csvSourceNameInput.disabled = isDisabled || !hasCsvText;
+  csvEnglishColumnSelect.disabled = isDisabled || !hasColumns;
+  csvJapaneseColumnSelect.disabled = isDisabled || !hasColumns;
+  csvHintColumnSelect.disabled = isDisabled || !hasColumns;
+  csvPreviewButton.disabled = isDisabled || !hasCsvText;
+  csvImportButton.disabled = isDisabled || !hasCsvText || !hasColumns;
+}
+
 function setSettingsBusy(isBusy, message) {
   saveBunproTokenButton.disabled = isBusy;
   saveLlmSettingsButton.disabled = isBusy;
+  saveFeedbackSettingsButton.disabled = isBusy;
   if (message) {
     if (message.includes("Bunpro")) bunproSettingsStatus.textContent = message;
     if (message.includes("LLM")) llmSettingsStatus.textContent = message;
+    if (message.includes("model personalisation")) feedbackSettingsStatus.textContent = message;
   }
 }
 

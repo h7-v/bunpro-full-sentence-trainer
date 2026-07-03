@@ -36,87 +36,32 @@
             Show grammar hints
           </label>
           <div id="grammarHint" class="grammar-hint hidden">
-            <div class="meta-row">
+            <div id="grammarHintMeta" class="meta-row">
               <span id="jlptLevel">-</span>
               <span id="grammarTitle">No grammar point loaded</span>
             </div>
             <p id="grammarMeaning" class="meaning"></p>
           </div>
           <div id="importStatusPanel" class="import-status hidden" aria-live="polite"></div>
+          <button id="openSettingsButton" class="secondary settings-open-button" type="button">Sources & Settings</button>
           <span id="retryBadge" class="retry-badge hidden">Retry</span>
           <details>
             <summary>Reference</summary>
             <p id="referenceJapanese"></p>
-          </details>
-          <details id="ankiPanel" class="anki-panel">
-            <summary>Anki import</summary>
-            <div class="anki-controls import-controls">
-              <button id="ankiConnectButton" class="secondary" type="button">Connect Anki</button>
-              <label class="anki-field hidden" for="ankiDeckSelect">
-                Deck
-                <select id="ankiDeckSelect"></select>
-              </label>
-              <label class="anki-field hidden" for="ankiEnglishFieldSelect">
-                English field
-                <select id="ankiEnglishFieldSelect"></select>
-              </label>
-              <label class="anki-field hidden" for="ankiJapaneseFieldSelect">
-                Japanese field
-                <select id="ankiJapaneseFieldSelect"></select>
-              </label>
-              <label class="anki-field hidden" for="ankiGrammarHintFieldSelect">
-                Grammar hint field
-                <select id="ankiGrammarHintFieldSelect"></select>
-              </label>
-              <div class="anki-actions">
-                <button id="ankiPreviewButton" class="secondary hidden" type="button">Preview</button>
-                <button id="ankiImportButton" class="hidden" type="button">Import</button>
-              </div>
-              <p id="ankiStatus" aria-live="polite"></p>
-              <div id="ankiPreview" class="anki-preview hidden"></div>
-            </div>
-          </details>
-          <details class="import-panel">
-            <summary>Bunpro import</summary>
-            <div class="import-controls">
-              <form id="bunproSettingsForm" class="settings-form" autocomplete="off">
-                <label class="settings-field" for="bunproTokenInput">
-                  Bunpro token
-                  <input id="bunproTokenInput" type="password" autocomplete="off" spellcheck="false" placeholder="Paste token to save">
-                </label>
-                <button id="saveBunproTokenButton" class="secondary" type="submit">Save token</button>
-                <p class="settings-note">Browser extensions with page access may read fields while you type. Use `.env` or `npm run setup` if that worries you.</p>
-                <p id="bunproSettingsStatus" class="settings-status" aria-live="polite"></p>
-              </form>
-              <button id="syncButton" type="button">Import Bunpro</button>
-            </div>
-          </details>
-          <details class="import-panel">
-            <summary>LLM settings</summary>
-            <form id="llmSettingsForm" class="settings-form" autocomplete="off">
-              <label class="settings-field" for="llmBaseUrlInput">
-                LLM base URL
-                <input id="llmBaseUrlInput" type="text" autocomplete="off" spellcheck="false" placeholder="https://generativelanguage.googleapis.com/v1beta/openai">
-              </label>
-              <label class="settings-field" for="llmApiKeyInput">
-                LLM API key
-                <input id="llmApiKeyInput" type="password" autocomplete="off" spellcheck="false" placeholder="Paste key to save">
-              </label>
-              <label class="settings-field" for="llmModelInput">
-                LLM model
-                <input id="llmModelInput" type="text" autocomplete="off" spellcheck="false" placeholder="gemini-3.5-flash">
-              </label>
-              <button id="saveLlmSettingsButton" class="secondary" type="submit">Save LLM settings</button>
-              <p class="settings-note">Saved values go to `.env`. Secret values are not shown again after saving.</p>
-              <p id="llmSettingsStatus" class="settings-status" aria-live="polite"></p>
-            </form>
           </details>
         </div>
 
         <div class="practice-column">
           <form id="answerForm" class="answer-panel">
             <p id="sourceContext" class="source-context">Import sentences to begin.</p>
-            <h2 id="englishPrompt">Import Bunpro or Anki sentences to begin.</h2>
+            <h2 id="englishPrompt">Import Bunpro, Anki, or CSV sentences to begin.</h2>
+            <div id="gettingStartedPanel" class="getting-started hidden">
+              <h3>Get started</h3>
+              <p>Add an LLM API key, then import sentences from Anki, Bunpro, or CSV.</p>
+              <div class="getting-started-actions">
+                <button id="startSetupButton" type="button">Start setup</button>
+              </div>
+            </div>
             <label for="answerInput">Your Japanese</label>
             <input id="answerInput" type="text" autocomplete="off" spellcheck="false" placeholder="日本語で入力してください">
             <div class="answer-actions">
@@ -151,6 +96,237 @@
           </nav>
         </div>
       </section>
+
+      <div id="settingsModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="settingsModalTitle">
+        <section class="settings-modal">
+          <header class="settings-modal-header">
+            <div>
+              <h2 id="settingsModalTitle">Sources & Settings</h2>
+            </div>
+            <button id="closeSettingsButton" class="secondary modal-close-button" type="button">Close</button>
+          </header>
+          <div class="settings-tabs" role="tablist" aria-label="Sources and settings">
+            <button id="startTabButton" class="settings-tab active" type="button" role="tab" aria-selected="true" aria-controls="startSettingsPanel" data-settings-tab="start">Start</button>
+            <button id="ankiTabButton" class="settings-tab" type="button" role="tab" aria-selected="false" aria-controls="ankiSettingsPanel" data-settings-tab="anki">Anki</button>
+            <button id="bunproTabButton" class="settings-tab" type="button" role="tab" aria-selected="false" aria-controls="bunproSettingsPanel" data-settings-tab="bunpro">Bunpro</button>
+            <button id="csvTabButton" class="settings-tab" type="button" role="tab" aria-selected="false" aria-controls="csvSettingsPanel" data-settings-tab="csv">CSV File</button>
+            <button id="otherTabButton" class="settings-tab" type="button" role="tab" aria-selected="false" aria-controls="otherSettingsPanel" data-settings-tab="other">Other</button>
+            <button id="llmTabButton" class="settings-tab" type="button" role="tab" aria-selected="false" aria-controls="llmSettingsPanel" data-settings-tab="llm">LLM</button>
+            <button id="feedbackTabButton" class="settings-tab" type="button" role="tab" aria-selected="false" aria-controls="feedbackSettingsPanel" data-settings-tab="feedback">Model Personalisation</button>
+          </div>
+          <div class="settings-modal-body">
+            <section id="startSettingsPanel" class="settings-tab-panel setup-panel" role="tabpanel" aria-labelledby="startTabButton" data-settings-panel="start">
+              <h3>First setup</h3>
+              <ol class="setup-steps">
+                <li>
+                  <span>Choose an LLM provider.</span>
+                  <p>Gemini is the default free option. Get a Gemini key from <a href="https://aistudio.google.com/apikey" target="_blank" rel="noreferrer">Google AI Studio</a>. OpenAI keys can be created at <a href="https://platform.openai.com/api-keys" target="_blank" rel="noreferrer">OpenAI Platform</a>.</p>
+                  <button id="setupLlmButton" class="secondary" type="button">Enter LLM settings</button>
+                </li>
+                <li>
+                  <span>Import sentences.</span>
+                  <p>For Anki, install AnkiConnect add-on code <a href="https://ankiweb.net/shared/info/2055492159" target="_blank" rel="noreferrer">2055492159</a>, open Anki, then connect here. For Bunpro, paste your Bunpro token and import. For CSV, export a spreadsheet with English and Japanese columns.</p>
+                  <div class="setup-actions">
+                    <button id="setupAnkiButton" class="secondary" type="button">Import Anki</button>
+                    <button id="setupBunproButton" class="secondary" type="button">Import Bunpro</button>
+                    <button id="setupCsvButton" class="secondary" type="button">Import CSV</button>
+                  </div>
+                  <div class="demo-start-callout">
+                    <label class="hint-toggle settings-checkbox-row">
+                      <input id="startDemoSentencesToggle" type="checkbox">
+                      Enable demo sentences
+                    </label>
+                    <p>Try the trainer immediately with built-in N5 sentences. You can turn these off later in the Other tab.</p>
+                  </div>
+                </li>
+              </ol>
+            </section>
+            <section id="ankiSettingsPanel" class="settings-tab-panel hidden" role="tabpanel" aria-labelledby="ankiTabButton" data-settings-panel="anki">
+              <h3>Anki import</h3>
+              <div class="anki-controls import-controls">
+                <details class="token-help">
+                  <summary>AnkiConnect setup</summary>
+                  <ol>
+                    <li>Install the <a href="https://ankiweb.net/shared/info/2055492159" target="_blank" rel="noreferrer">AnkiConnect add-on</a>.</li>
+                    <li>Restart Anki after installing the add-on.</li>
+                    <li>Keep Anki open while importing sentences.</li>
+                    <li>Click Connect Anki, choose a deck, then choose the English and Japanese fields.</li>
+                  </ol>
+                </details>
+                <button id="ankiConnectButton" class="secondary" type="button">Connect Anki</button>
+                <label class="anki-field hidden" for="ankiDeckSelect">
+                  Deck
+                  <select id="ankiDeckSelect"></select>
+                </label>
+                <label class="anki-field hidden" for="ankiEnglishFieldSelect">
+                  English field
+                  <select id="ankiEnglishFieldSelect"></select>
+                </label>
+                <label class="anki-field hidden" for="ankiJapaneseFieldSelect">
+                  Japanese field
+                  <select id="ankiJapaneseFieldSelect"></select>
+                </label>
+                <label class="anki-field hidden" for="ankiGrammarHintFieldSelect">
+                  Grammar hint field
+                  <select id="ankiGrammarHintFieldSelect"></select>
+                </label>
+                <div class="anki-actions">
+                  <button id="ankiPreviewButton" class="secondary hidden" type="button">Preview</button>
+                  <button id="ankiImportButton" class="hidden" type="button">Import</button>
+                </div>
+                <p id="ankiStatus" aria-live="polite"></p>
+                <div id="ankiPreview" class="anki-preview hidden"></div>
+              </div>
+            </section>
+            <section id="bunproSettingsPanel" class="settings-tab-panel hidden" role="tabpanel" aria-labelledby="bunproTabButton" data-settings-panel="bunpro">
+              <h3>Bunpro import</h3>
+              <div class="import-controls">
+                <details class="token-help">
+                  <summary>How to find your Bunpro token</summary>
+                  <ol>
+                    <li>Log in to <a href="https://bunpro.jp/dashboard" target="_blank" rel="noreferrer">Bunpro</a> in your browser.</li>
+                    <li>Open developer tools with F12.</li>
+                    <li>Open the Network tab.</li>
+                    <li>Refresh Bunpro.</li>
+                    <li>Search for <code>user</code> in the Network tab.</li>
+                    <li>Click the request named <code>user</code>.</li>
+                    <li>Open Headers and scroll down to Request Headers.</li>
+                    <li>Find Authorization and copy the token after <code>Token token=</code>.</li>
+                  </ol>
+                  <p>Paste only the token value here. Your saved token stays in your local `.env` file.</p>
+                </details>
+                <form id="bunproSettingsForm" class="settings-form" autocomplete="off">
+                  <label class="settings-field" for="bunproTokenInput">
+                    Bunpro token
+                    <input id="bunproTokenInput" type="text" autocomplete="off" spellcheck="false" placeholder="Paste token to save">
+                  </label>
+                  <button id="saveBunproTokenButton" class="secondary" type="submit">Save token</button>
+                  <p class="settings-note">Browser extensions with page access may read fields while you type. Manual `.env` editing avoids typing keys into the browser.</p>
+                  <p id="bunproSettingsStatus" class="settings-status" aria-live="polite"></p>
+                </form>
+                <button id="syncButton" type="button">Import Bunpro</button>
+              </div>
+            </section>
+            <section id="csvSettingsPanel" class="settings-tab-panel hidden" role="tabpanel" aria-labelledby="csvTabButton" data-settings-panel="csv">
+              <h3>CSV file import</h3>
+              <div class="import-controls">
+                <details class="token-help">
+                  <summary>CSV format</summary>
+                  <p>Export from Excel, Google Sheets, or another spreadsheet app as CSV. The first row should contain column names. Choose one English column, one Japanese column, and optionally a hint column.</p>
+                  <div class="csv-example-table" role="region" aria-label="Example CSV spreadsheet layout">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>English</th>
+                          <th>Japanese</th>
+                          <th>Hint</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          <td>The sea is beautiful.</td>
+                          <td>海が綺麗だ。</td>
+                          <td>Use が for the subject.</td>
+                        </tr>
+                        <tr>
+                          <td>I went to Tokyo yesterday.</td>
+                          <td>昨日東京に行きました。</td>
+                          <td>Past tense polite form.</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                  <p>Imports are capped at 5,000 rows and 2 MB. Very long fields are shortened before saving.</p>
+                </details>
+                <label class="settings-field" for="csvFileInput">
+                  CSV file
+                  <input id="csvFileInput" type="file" accept=".csv,text/csv">
+                </label>
+                <label class="settings-field hidden" for="csvSourceNameInput">
+                  Source name
+                  <input id="csvSourceNameInput" type="text" autocomplete="off" spellcheck="false" maxlength="120" placeholder="My sentence deck">
+                </label>
+                <div id="csvColumnFields" class="csv-column-fields hidden">
+                  <label class="settings-field" for="csvEnglishColumnSelect">
+                    English column
+                    <select id="csvEnglishColumnSelect"></select>
+                  </label>
+                  <label class="settings-field" for="csvJapaneseColumnSelect">
+                    Japanese column
+                    <select id="csvJapaneseColumnSelect"></select>
+                  </label>
+                  <label class="settings-field" for="csvHintColumnSelect">
+                    Hint column
+                    <select id="csvHintColumnSelect"></select>
+                  </label>
+                </div>
+                <div class="anki-actions">
+                  <button id="csvPreviewButton" class="secondary" type="button" disabled>Preview</button>
+                  <button id="csvImportButton" type="button" disabled>Import CSV</button>
+                </div>
+                <p id="csvStatus" aria-live="polite"></p>
+                <div id="csvPreview" class="anki-preview hidden"></div>
+              </div>
+            </section>
+            <section id="otherSettingsPanel" class="settings-tab-panel hidden" role="tabpanel" aria-labelledby="otherTabButton" data-settings-panel="other">
+              <h3>Other</h3>
+              <label class="hint-toggle settings-checkbox-row">
+                <input id="demoSentencesToggle" type="checkbox">
+                Enable demo sentences
+              </label>
+              <p class="settings-note">Adds five simple N5-level practice sentences without importing from Bunpro, Anki, or CSV.</p>
+              <p id="demoSentencesStatus" class="settings-status" aria-live="polite"></p>
+            </section>
+            <section id="llmSettingsPanel" class="settings-tab-panel hidden" role="tabpanel" aria-labelledby="llmTabButton" data-settings-panel="llm">
+              <h3>LLM settings</h3>
+              <form id="llmSettingsForm" class="settings-form" autocomplete="off">
+                <label class="settings-field" for="llmBaseUrlInput">
+                  LLM base URL
+                  <input id="llmBaseUrlInput" type="text" autocomplete="off" spellcheck="false" placeholder="https://generativelanguage.googleapis.com/v1beta/openai">
+                </label>
+                <label class="settings-field" for="llmApiKeyInput">
+                  LLM API key
+                  <input id="llmApiKeyInput" type="text" autocomplete="off" spellcheck="false" placeholder="Paste key to save">
+                </label>
+                <label class="settings-field" for="llmModelInput">
+                  LLM model
+                  <input id="llmModelInput" type="text" autocomplete="off" spellcheck="false" placeholder="gemini-3.5-flash">
+                </label>
+                <button id="saveLlmSettingsButton" class="secondary" type="submit">Save LLM settings</button>
+                <p class="settings-note">Saved values go to `.env`. Secret values are not shown again after saving.</p>
+                <p id="llmSettingsStatus" class="settings-status" aria-live="polite"></p>
+              </form>
+            </section>
+            <section id="feedbackSettingsPanel" class="settings-tab-panel hidden" role="tabpanel" aria-labelledby="feedbackTabButton" data-settings-panel="feedback">
+              <h3>Model personalisation</h3>
+              <form id="feedbackSettingsForm" class="settings-form" autocomplete="off">
+                <fieldset class="settings-field response-language-field">
+                  <legend>Model response language</legend>
+                  <div class="segmented-options">
+                    <label>
+                      <input type="radio" name="feedbackLanguage" value="english" checked>
+                      English
+                    </label>
+                    <label>
+                      <input type="radio" name="feedbackLanguage" value="japanese">
+                      Japanese
+                    </label>
+                  </div>
+                </fieldset>
+                <label class="settings-field" for="customInstructionsInput">
+                  Extra model instructions
+                  <textarea id="customInstructionsInput" maxlength="800" rows="5" autocomplete="off" spellcheck="true" placeholder="Example: Be encouraging and explain mistakes like a friendly tutor."></textarea>
+                </label>
+                <p class="settings-note usage-warning">Extra instructions are sent with every grading request. Longer instructions can increase model usage and may make provider usage limits arrive faster.</p>
+                <p id="customInstructionsCounter" class="settings-note">0 / 800 characters</p>
+                <button id="saveFeedbackSettingsButton" class="secondary" type="submit">Save model personalisation</button>
+                <p class="settings-note">Saved values go to `.env` and are included with each grading request. The model still has to return structured JSON.</p>
+                <p id="feedbackSettingsStatus" class="settings-status" aria-live="polite"></p>
+              </form>
+            </section>
+          </div>
+        </section>
+      </div>
     </main>
 
     <script src="/app.js"></script>

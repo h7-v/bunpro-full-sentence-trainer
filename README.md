@@ -2,7 +2,7 @@
 
 A local practice app for full-sentence Japanese translation practice.
 
-It imports sentences from Bunpro or Anki, shows you an English sentence, asks you to type the Japanese, and uses an LLM to grade whether your answer is good enough. Missed answers can be retried in the same session.
+It imports sentences from Bunpro, Anki, or CSV files, shows you an English sentence, asks you to type the Japanese, and uses an LLM to grade whether your answer is good enough. Missed answers can be retried in the same session.
 
 The Bunpro importer uses an unofficial Bunpro API. Bunpro can change their frontend API at any time.
 
@@ -18,18 +18,17 @@ The Bunpro importer uses an unofficial Bunpro API. Bunpro can change their front
 
 ## Before You Start
 
-You need four things:
+You need:
 
-- A Bunpro account
-- A Bunpro API token
-- A Gemini API key for the default free provider
 - Node.js 18 or newer
+- A Gemini API key for the default free provider
+- At least one sentence source: Bunpro, Anki, or CSV
 
-Anki import is optional. If you want to import sentence cards from Anki, you also need Anki desktop and the AnkiConnect add-on.
+For Bunpro import, you need a Bunpro account and Bunpro token. For Anki import, you need Anki desktop and the AnkiConnect add-on. For CSV import, you need a CSV file with English and Japanese columns.
 
 You do not need to understand programming to run this app, but you do need to paste a few commands into a command window.
 
-By default, the setup uses Gemini with `gemini-3.5-flash` because Gemini has a free API tier. The grader uses a Chat Completions-compatible endpoint, so advanced users can also point it at OpenAI, another OpenAI-compatible provider, or a local model server if it can return JSON reliably.
+By default, the app uses Gemini with `gemini-3.5-flash` because Gemini has a free API tier. The grader uses a Chat Completions-compatible endpoint, so advanced users can also point it at OpenAI, another OpenAI-compatible provider, or a local model server if it can return JSON reliably.
 
 Important: ChatGPT Plus/Pro and OpenAI API billing are separate. A ChatGPT subscription does not pay for OpenAI API grading. If you choose OpenAI and grading fails with a quota error, you probably need to add API credit in the OpenAI developer billing page.
 
@@ -211,11 +210,11 @@ Gemini is the recommended default because it has a free API tier. Skip this sect
 1. Go to [aistudio.google.com/apikey](https://aistudio.google.com/apikey).
 2. Sign in.
 3. Create a Gemini API key. One should be created for you and listed as the "Default Gemini API Key".
-4. Click the key link (e.g.: ...sl2Q). Copy the full API key somewhere temporary so you can paste it during setup.
+4. Click the key link (e.g.: ...sl2Q). Copy the full API key somewhere temporary so you can paste it into the app.
 
 ## Using OpenAI Instead
 
-If you prefer OpenAI, use these values during setup or in `.env`:
+If you prefer OpenAI, use these values in **Sources & Settings** or in `.env`:
 
 ```sh
 LLM_BASE_URL=https://api.openai.com/v1
@@ -226,7 +225,7 @@ LLM_MODEL=gpt-5.4-mini
 1. Go to [platform.openai.com/api-keys](https://platform.openai.com/api-keys).
 2. Sign in.
 3. Create a new secret key.
-4. Copy the key somewhere temporary so you can paste it during setup.
+4. Copy the key somewhere temporary so you can paste it into the app.
 
 Important: The OpenAI API is billed through the OpenAI developer platform. It is not included with ChatGPT Plus/Pro.
 
@@ -238,48 +237,9 @@ If you use OpenAI and the app says grading failed because of quota:
 
 About 5 USD should cover roughly 2,000 graded questions, depending on the model and how long the sentences are.
 
-## Set Up The App
-
-In the terminal that is open in the app folder, type:
-
-```sh
-npm run setup
-```
-
-Press Enter.
-
-The setup script asks for:
-
-- Bunpro API token
-- LLM base URL
-- LLM API key
-- LLM model
-- Local port
-
-For the recommended Gemini setup, answer like this:
-
-| Setup question | What to enter |
-| --- | --- |
-| Bunpro API token | Paste the Bunpro token you copied earlier |
-| LLM base URL | Press Enter |
-| LLM API key | Paste your Gemini API key from `https://aistudio.google.com/apikey` |
-| LLM model | Press Enter |
-| Local port | Press Enter |
-
-Pressing Enter for the LLM base URL, model, and port uses the default Gemini settings.
-
-The setup script writes a local `.env` file. Do not share that file. It contains your private tokens.
-
-You can also start the app first and save settings from the browser:
-
-- Put your Bunpro token under **Bunpro import**
-- Put your LLM base URL, API key, and model under **LLM settings**
-
-The browser settings form writes the same local `.env` file and clears the fields after saving. If you use browser extensions that can read every page you visit, `npm run setup` or manual `.env` editing is more private because the keys are never typed into the browser.
-
 ## Start The App
 
-In the same terminal, type:
+In the terminal that is open in the app folder, type:
 
 ```sh
 npm start
@@ -296,6 +256,18 @@ http://127.0.0.1:5174
 Leave the terminal window open while you use the app. If you close it, the app stops.
 
 This project has no npm package dependencies. You do not need to run `npm install`.
+
+## Set Up The App
+
+The first time you open the browser page, the app shows **Sources & Settings**.
+
+1. Open **LLM** and save your LLM base URL, API key, and model.
+2. Open **Bunpro** and save your Bunpro token, or open **Anki** and import an Anki deck.
+3. Start practicing once at least one source has imported sentences.
+
+The browser settings form writes a local `.env` file and clears secret fields after saving. Do not share `.env`; it contains your private tokens.
+
+If you use browser extensions that can read every page you visit, manual `.env` editing is more private because keys are never typed into the browser.
 
 ## Stop The App
 
@@ -328,6 +300,35 @@ The default AnkiConnect address is:
 ```sh
 ANKI_CONNECT_URL=http://127.0.0.1:8765
 ```
+
+## Optional: Import CSV Sentence Files
+
+The app can import sentence pairs from a CSV file exported from Excel, Google Sheets, or another spreadsheet app.
+
+Your CSV should have a header row and at least two columns:
+
+- English sentence
+- Japanese sentence
+- Optional hint
+
+Example:
+
+```csv
+English,Japanese,Hint
+The sea is beautiful.,海が綺麗だ,い-adjective / な-adjective practice
+I went to Tokyo yesterday.,昨日東京に行きました,Past tense
+```
+
+In the browser:
+
+1. Open **Sources & Settings**.
+2. Open **CSV File**.
+3. Choose your CSV file.
+4. Select the English, Japanese, and optional hint columns.
+5. Preview the import.
+6. Click **Import**.
+
+CSV imports are capped at 5,000 rows and 2 MB. Very long fields are shortened before saving so an accidental huge spreadsheet cell cannot take over the app.
 
 This is already the app default. You only need to put it in `.env` if you changed your AnkiConnect settings.
 
@@ -387,23 +388,11 @@ On Windows, also try:
 
 ### The page says the Bunpro token is missing
 
-Run this again:
-
-```sh
-npm run setup
-```
-
-Then paste your Bunpro token when asked.
+Open **Sources & Settings**, go to **Bunpro**, save your Bunpro token, then try importing again.
 
 ### The page says the LLM key is missing
 
-Run this again:
-
-```sh
-npm run setup
-```
-
-Then paste your LLM API key when asked. If you are using a local provider that does not require a key, make sure `LLM_BASE_URL` points to a local address such as `http://localhost:11434/v1`.
+Open **Sources & Settings**, go to **LLM**, save your LLM API key, then try grading again. If you are using a local provider that does not require a key, make sure `LLM_BASE_URL` points to a local address such as `http://localhost:11434/v1`.
 
 ### Gemini grading failed
 
@@ -428,7 +417,7 @@ Make sure `npm start` is still running in the terminal. Then open:
 http://127.0.0.1:5174
 ```
 
-If you changed the local port during setup, use that port number instead of `5174`.
+If you changed the local port in `.env`, use that port number instead of `5174`.
 
 ### Bunpro sync fails
 
@@ -453,7 +442,7 @@ ANKI_CONNECT_URL=http://127.0.0.1:8765
 
 This app runs locally on your computer. Bunpro and LLM requests are made by the local Node server, not directly by browser JavaScript.
 
-The in-browser settings forms send keys to the local server so it can write `.env`. They do not store keys in local storage or show saved secret values again. A browser extension with permission to read all page content may still see values while you type them, so use `npm run setup` or manual `.env` editing if that is a concern.
+The in-browser settings forms send keys to the local server so it can write `.env`. They do not store keys in local storage or show saved secret values again. A browser extension with permission to read all page content may still see values while you type them, so use manual `.env` editing if that is a concern.
 
 Do not share:
 
@@ -465,19 +454,15 @@ Do not share:
 
 ## Manual `.env` Setup
 
-Most users should use:
-
-```sh
-npm run setup
-```
-
-Advanced users can create `.env` manually:
+Most users should use the browser setup. Advanced users can create `.env` manually:
 
 ```sh
 BUNPRO_API_TOKEN=your_bunpro_token_here
 LLM_BASE_URL=https://generativelanguage.googleapis.com/v1beta/openai
 LLM_API_KEY=your_gemini_api_key_here
 LLM_MODEL=gemini-3.5-flash
+LLM_FEEDBACK_LANGUAGE=english
+LLM_CUSTOM_INSTRUCTIONS=
 PORT=5174
 ANKI_CONNECT_URL=http://127.0.0.1:8765
 ```
@@ -489,6 +474,8 @@ BUNPRO_API_TOKEN=your_bunpro_token_here
 LLM_BASE_URL=https://api.openai.com/v1
 LLM_API_KEY=your_openai_api_key_here
 LLM_MODEL=gpt-5.4-mini
+LLM_FEEDBACK_LANGUAGE=english
+LLM_CUSTOM_INSTRUCTIONS=
 PORT=5174
 ANKI_CONNECT_URL=http://127.0.0.1:8765
 ```

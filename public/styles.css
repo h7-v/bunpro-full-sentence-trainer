@@ -9,6 +9,8 @@
   --accent: #bc002d;
   --accent-strong: #8f0022;
   --button-hover: #f4f4f4;
+  --scrollbar-track: #e9e9e9;
+  --scrollbar-thumb: #adadad;
   --ok: #157348;
   --warn: #9a6500;
   --bad: #b42318;
@@ -25,6 +27,8 @@
     --accent: #bc002d;
     --accent-strong: #8f0022;
     --button-hover: #e9e9e9;
+    --scrollbar-track: #202020;
+    --scrollbar-thumb: #5f5f5f;
   }
 }
 
@@ -33,12 +37,18 @@
 }
 
 html {
-  font-size: 120%;
+  height: 100%;
+  font-size: 110%;
+  overflow: hidden;
 }
 
 body {
+  height: 100%;
   margin: 0;
-  background: var(--bg);
+  overflow: hidden;
+  background:
+    url("/clay-banks-unsplash-grey-crop.png") center / cover fixed no-repeat,
+    var(--bg);
   color: var(--text);
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
@@ -51,7 +61,7 @@ select {
 }
 
 button {
-  min-height: 46px;
+  min-height: 42px;
   border: 1px solid var(--button-bg);
   border-radius: 6px;
   background: var(--button-bg);
@@ -84,9 +94,24 @@ button:disabled {
   opacity: 0.62;
 }
 
+a {
+  color: var(--text);
+  font-weight: 800;
+  text-decoration-color: var(--accent);
+  text-underline-offset: 3px;
+}
+
+a:hover {
+  color: var(--accent);
+}
+
 .app-shell {
   width: min(1400px, calc(100vw - 32px));
+  height: calc(100dvh - 36px);
   margin: 20px auto 16px;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  min-height: 0;
 }
 
 .topbar {
@@ -124,11 +149,67 @@ button:disabled {
 .trainer {
   display: grid;
   gap: 14px;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .practice-column {
   display: grid;
   gap: 14px;
+  min-height: 0;
+  overflow: auto;
+  padding-right: 2px;
+}
+
+.prompt-panel,
+.practice-column,
+.settings-modal-body,
+.anki-preview,
+.grammar-hint .meaning,
+.settings-tabs {
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+  scrollbar-gutter: stable;
+  scrollbar-width: auto;
+}
+
+.prompt-panel::-webkit-scrollbar,
+.practice-column::-webkit-scrollbar,
+.settings-modal-body::-webkit-scrollbar,
+.anki-preview::-webkit-scrollbar,
+.grammar-hint .meaning::-webkit-scrollbar,
+.settings-tabs::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+.prompt-panel::-webkit-scrollbar-track,
+.practice-column::-webkit-scrollbar-track,
+.settings-modal-body::-webkit-scrollbar-track,
+.anki-preview::-webkit-scrollbar-track,
+.grammar-hint .meaning::-webkit-scrollbar-track,
+.settings-tabs::-webkit-scrollbar-track {
+  border-radius: 999px;
+  background: var(--scrollbar-track);
+}
+
+.prompt-panel::-webkit-scrollbar-thumb,
+.practice-column::-webkit-scrollbar-thumb,
+.settings-modal-body::-webkit-scrollbar-thumb,
+.anki-preview::-webkit-scrollbar-thumb,
+.grammar-hint .meaning::-webkit-scrollbar-thumb,
+.settings-tabs::-webkit-scrollbar-thumb {
+  border: 3px solid var(--scrollbar-track);
+  border-radius: 999px;
+  background: var(--scrollbar-thumb);
+}
+
+.prompt-panel::-webkit-scrollbar-thumb:hover,
+.practice-column::-webkit-scrollbar-thumb:hover,
+.settings-modal-body::-webkit-scrollbar-thumb:hover,
+.anki-preview::-webkit-scrollbar-thumb:hover,
+.grammar-hint .meaning::-webkit-scrollbar-thumb:hover,
+.settings-tabs::-webkit-scrollbar-thumb:hover {
+  background: var(--muted);
 }
 
 .prompt-panel,
@@ -138,6 +219,11 @@ button:disabled {
   border-radius: 8px;
   background: var(--panel);
   padding: 16px;
+}
+
+.prompt-panel {
+  min-height: 0;
+  overflow: auto;
 }
 
 .hint-toggle {
@@ -157,6 +243,10 @@ button:disabled {
   accent-color: var(--accent);
 }
 
+.settings-checkbox-row {
+  margin-top: 0;
+}
+
 .practice-settings {
   display: grid;
   gap: 12px;
@@ -174,7 +264,7 @@ button:disabled {
 
 .retry-setting input {
   width: 77px;
-  min-height: 41px;
+  min-height: 38px;
   border: 1px solid var(--line);
   border-radius: 6px;
   background: transparent;
@@ -247,6 +337,17 @@ button:disabled {
   margin-top: 12px;
 }
 
+.grammar-hint .meaning {
+  max-height: 180px;
+  overflow: auto;
+  padding-right: 4px;
+}
+
+.grammar-hint.anki-hint .meaning {
+  margin-top: 0;
+  white-space: pre-wrap;
+}
+
 .import-status {
   display: grid;
   gap: 8px;
@@ -263,6 +364,11 @@ button:disabled {
 .import-status-source {
   color: var(--text);
   font-weight: 800;
+}
+
+.settings-open-button {
+  width: 100%;
+  margin-top: 14px;
 }
 
 .meta-row {
@@ -317,25 +423,15 @@ summary {
   line-height: 1.7;
 }
 
-.import-panel,
-.anki-panel {
-  margin-top: 12px;
-}
-
 .import-controls,
 .anki-controls {
   display: grid;
   gap: 10px;
-  margin-top: 12px;
 }
 
 .settings-form {
   display: grid;
   gap: 10px;
-}
-
-.import-panel > .settings-form {
-  margin-top: 12px;
 }
 
 .settings-field,
@@ -347,14 +443,84 @@ summary {
 }
 
 .settings-field input,
+.settings-field select,
+.settings-field textarea,
 .anki-field select {
   width: 100%;
-  min-height: 46px;
+  min-height: 42px;
   border: 1px solid var(--line);
   border-radius: 6px;
   background: var(--panel);
   color: var(--text);
   padding: 0 10px;
+}
+
+.settings-field textarea {
+  min-height: 120px;
+  padding: 10px;
+  resize: vertical;
+  line-height: 1.45;
+}
+
+.csv-column-fields {
+  display: grid;
+  gap: 10px;
+}
+
+.response-language-field {
+  margin: 0;
+  border: 0;
+  padding: 0;
+}
+
+.response-language-field legend {
+  margin: 0 0 6px;
+  padding: 0;
+}
+
+.segmented-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  justify-self: start;
+  width: min(100%, 280px);
+  max-width: 100%;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+
+.segmented-options label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  padding: 0 12px;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.segmented-options label:has(input:checked) {
+  background: var(--button-bg);
+  color: var(--accent-strong);
+}
+
+.segmented-options label + label {
+  border-left: 1px solid var(--line);
+}
+
+.segmented-options input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+
+.usage-warning {
+  border-left: 3px solid var(--warn);
+  padding-left: 10px;
 }
 
 .settings-note,
@@ -368,13 +534,82 @@ summary {
   font-size: 0.86rem;
 }
 
+.token-help {
+  margin: 0;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 10px 12px;
+  color: var(--muted);
+}
+
+.token-help summary {
+  color: var(--text);
+  font-weight: 800;
+}
+
+.token-help ol {
+  display: grid;
+  gap: 6px;
+  margin: 10px 0 0;
+  padding-left: 1.35rem;
+  line-height: 1.45;
+}
+
+.token-help p {
+  margin: 10px 0 0;
+  line-height: 1.45;
+}
+
+.token-help code {
+  color: var(--text);
+}
+
+.csv-example-table {
+  margin-top: 12px;
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+
+.csv-example-table table {
+  width: 100%;
+  min-width: 560px;
+  border-collapse: collapse;
+  font-size: 0.84rem;
+  line-height: 1.35;
+}
+
+.csv-example-table th,
+.csv-example-table td {
+  border-right: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  padding: 8px 10px;
+  text-align: left;
+  vertical-align: top;
+}
+
+.csv-example-table th {
+  color: var(--text);
+  background: var(--panel);
+}
+
+.csv-example-table tr:last-child td {
+  border-bottom: 0;
+}
+
+.csv-example-table th:last-child,
+.csv-example-table td:last-child {
+  border-right: 0;
+}
+
 .anki-actions {
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
 }
 
-#ankiStatus {
+#ankiStatus,
+#csvStatus {
   margin: 0;
   color: var(--muted);
   line-height: 1.4;
@@ -409,9 +644,36 @@ summary {
   font-weight: 800;
 }
 
+.getting-started {
+  display: grid;
+  gap: 10px;
+  margin: 0 0 16px;
+  border-left: 4px solid var(--accent);
+  padding: 4px 0 4px 14px;
+}
+
+.getting-started h3 {
+  margin: 0;
+  font-size: 1.15rem;
+  line-height: 1.2;
+}
+
+.getting-started p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.getting-started-actions,
+.setup-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
 #answerInput {
   width: 100%;
-  min-height: 67px;
+  min-height: 60px;
   border: 1px solid var(--line);
   border-radius: 6px;
   background: transparent;
@@ -427,7 +689,7 @@ summary {
 }
 
 #gradeButton {
-  min-height: 67px;
+  min-height: 60px;
   padding: 0 26px;
 }
 
@@ -487,7 +749,7 @@ summary {
 }
 
 .drill-row input {
-  min-height: 48px;
+  min-height: 44px;
   border: 1px solid var(--line);
   border-radius: 6px;
   background: transparent;
@@ -523,23 +785,152 @@ summary {
   flex-wrap: wrap;
 }
 
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.68);
+}
+
+.settings-modal {
+  width: min(900px, calc(100vw - 32px));
+  max-height: min(760px, calc(100dvh - 32px));
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.45);
+}
+
+.settings-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 18px 14px;
+  border-bottom: 1px solid var(--line);
+}
+
+.settings-modal h2 {
+  margin: 0;
+  font-size: 1.45rem;
+  line-height: 1.15;
+}
+
+.modal-close-button {
+  flex: 0 0 auto;
+}
+
+.settings-tabs {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--line);
+}
+
+.settings-tab {
+  min-height: 38px;
+  white-space: nowrap;
+  border-color: var(--line);
+  background: transparent;
+  color: var(--muted);
+}
+
+.settings-tab.active,
+.settings-tab:hover {
+  border-color: var(--button-bg);
+  background: var(--button-bg);
+  color: var(--accent-strong);
+}
+
+.settings-modal-body {
+  min-height: 0;
+  overflow: auto;
+  padding: 18px;
+}
+
+.settings-tab-panel {
+  display: grid;
+  gap: 12px;
+}
+
+.settings-tab-panel h3 {
+  margin: 0;
+  font-size: 1.2rem;
+  line-height: 1.2;
+}
+
+.setup-panel {
+  gap: 14px;
+}
+
+.setup-steps {
+  display: grid;
+  gap: 16px;
+  margin: 0;
+  padding-left: 1.35rem;
+}
+
+.setup-steps li {
+  padding-left: 4px;
+}
+
+.setup-steps li::marker {
+  color: var(--accent);
+  font-weight: 800;
+}
+
+.setup-steps span {
+  display: block;
+  margin-bottom: 4px;
+  font-weight: 800;
+}
+
+.setup-steps p {
+  margin: 0 0 10px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.demo-start-callout {
+  display: grid;
+  gap: 8px;
+  margin: 10px 0;
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  padding: 12px;
+  background: rgba(188, 0, 45, 0.08);
+}
+
+.demo-start-callout p {
+  margin: 0;
+}
+
 .hidden {
   display: none;
 }
 
 @media (min-width: 900px) {
   .trainer {
-    grid-template-columns: minmax(300px, 0.65fr) minmax(620px, 1.35fr);
+    grid-template-columns: minmax(260px, 0.5fr) minmax(680px, 1.5fr);
     align-items: start;
   }
 
   .prompt-panel {
     grid-column: 1;
+    max-height: 100%;
   }
 
   .practice-column {
     grid-column: 2;
     align-self: start;
+    max-height: 100%;
   }
 
   .answer-panel {
@@ -561,8 +952,12 @@ summary {
     grid-column: 1 / -1;
   }
 
+  .answer-panel .getting-started {
+    grid-column: 1 / -1;
+  }
+
   #answerInput {
-    min-height: 67px;
+    min-height: 60px;
   }
 
   .answer-actions {
@@ -575,7 +970,8 @@ summary {
 @media (max-width: 720px) {
   .app-shell {
     width: min(100vw - 20px, 1040px);
-    margin: 18px auto;
+    height: calc(100dvh - 24px);
+    margin: 12px auto;
   }
 
   .topbar {
@@ -607,5 +1003,14 @@ summary {
 
   .drill-row {
     grid-template-columns: 1fr;
+  }
+
+  .settings-modal {
+    width: calc(100vw - 20px);
+    max-height: calc(100dvh - 20px);
+  }
+
+  .settings-modal-header {
+    display: grid;
   }
 }

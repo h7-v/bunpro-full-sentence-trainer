@@ -10,14 +10,6 @@
 cd bunpro-full-sentence-trainer
 ```
 
-## First-Time Setup
-
-```sh
-npm run setup
-```
-
-This writes `.env`. Use the Gemini defaults unless you know you want another provider. Do not commit `.env` to GitHub.
-
 ## Start The Server
 
 ```sh
@@ -29,6 +21,8 @@ Then open:
 ```text
 http://127.0.0.1:5174
 ```
+
+Use **Sources & Settings** in the browser to save LLM, Bunpro, Anki, and model personalisation settings. This writes `.env`. Do not commit `.env` to GitHub.
 
 ## Stop The Server
 
@@ -132,7 +126,10 @@ BUNPRO_API_TOKEN=your_bunpro_token
 LLM_BASE_URL=https://generativelanguage.googleapis.com/v1beta/openai
 LLM_API_KEY=your_gemini_api_key
 LLM_MODEL=gemini-3.5-flash
+LLM_FEEDBACK_LANGUAGE=english
+LLM_CUSTOM_INSTRUCTIONS=
 PORT=5174
+ANKI_CONNECT_URL=http://127.0.0.1:8765
 ```
 
 OpenAI example:
@@ -142,7 +139,10 @@ BUNPRO_API_TOKEN=your_bunpro_token
 LLM_BASE_URL=https://api.openai.com/v1
 LLM_API_KEY=your_openai_api_key
 LLM_MODEL=gpt-5.4-mini
+LLM_FEEDBACK_LANGUAGE=english
+LLM_CUSTOM_INSTRUCTIONS=
 PORT=5174
+ANKI_CONNECT_URL=http://127.0.0.1:8765
 ```
 
 ## Copy-All Source
@@ -150,7 +150,6 @@ PORT=5174
 The block below is what the top button copies.
 
 <pre id="copy-all-commands"><code>cd bunpro-full-sentence-trainer
-npm run setup
 npm start
 
 # Open http://127.0.0.1:5174

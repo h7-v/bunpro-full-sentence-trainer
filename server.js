@@ -9,10 +9,18 @@ const CACHE_DIR = path.join(ROOT, "cache");
 const ENV_FILE = path.join(ROOT, ".env");
 const SYNC_CACHE_FILE = path.join(CACHE_DIR, "bunpro-sync.json");
 const ANKI_CACHE_PREFIX = "anki-deck-";
+const CSV_CACHE_PREFIX = "csv-file-";
 const BUNPRO_BASE_URL = "https://api.bunpro.jp/api/frontend";
 const ANKI_CONNECT_URL = process.env.ANKI_CONNECT_URL || "http://127.0.0.1:8765";
 const DEFAULT_LLM_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/openai";
 const DEFAULT_LLM_MODEL = "gemini-3.5-flash";
+const DEFAULT_FEEDBACK_LANGUAGE = "english";
+const MAX_CUSTOM_INSTRUCTIONS_LENGTH = 800;
+const MAX_CSV_BYTES = 2 * 1024 * 1024;
+const MAX_CSV_ROWS = 5000;
+const MAX_CSV_FIELD_LENGTH = 2000;
+const MAX_CSV_HINT_LENGTH = 1200;
+const MAX_CSV_PREVIEW_ROWS = 10;
 const SRS_LEVELS = ["beginner", "adept", "seasoned", "expert", "master"];
 
 loadEnv(ENV_FILE);
@@ -23,7 +31,9 @@ const config = {
   bunproToken: process.env.BUNPRO_API_TOKEN || "",
   llmBaseUrl: stripTrailingSlash(process.env.LLM_BASE_URL || process.env.OPENAI_BASE_URL || DEFAULT_LLM_BASE_URL),
   llmApiKey: process.env.LLM_API_KEY || process.env.OPENAI_API_KEY || "",
-  llmModel: process.env.LLM_MODEL || process.env.OPENAI_MODEL || DEFAULT_LLM_MODEL
+  llmModel: process.env.LLM_MODEL || process.env.OPENAI_MODEL || DEFAULT_LLM_MODEL,
+  feedbackLanguage: normalizeFeedbackLanguage(process.env.LLM_FEEDBACK_LANGUAGE || DEFAULT_FEEDBACK_LANGUAGE),
+  customInstructions: limitCustomInstructions(process.env.LLM_CUSTOM_INSTRUCTIONS || "")
 };
 
 const state = {
@@ -33,12 +43,14 @@ const state = {
   grammarPoints: [],
   sentences: [],
   ankiImports: new Map(),
+  csvImports: new Map(),
   grammarById: new Map(),
   hydrateCache: new Map()
 };
 
 loadSyncCache();
 loadAnkiCache();
+loadCsvCache();
 
 const server = http.createServer(async (req, res) => {
   try {
@@ -51,15 +63,19 @@ const server = http.createServer(async (req, res) => {
         hasLlmCredentials: hasLlmCredentials(),
         model: config.llmModel,
         llmBaseUrl: config.llmBaseUrl,
+        feedbackLanguage: config.feedbackLanguage,
+        customInstructions: config.customInstructions,
         syncedAt: state.syncedAt,
         syncedAtDisplay: state.syncedAtDisplay,
         ankiDecks: getAnkiImportSummaries(),
+        csvFiles: getCsvImportSummaries(),
         ankiSyncedAt: getLatestAnkiImport()?.syncedAt || null,
         ankiSyncedAtDisplay: getLatestAnkiImport()?.syncedAtDisplay || null,
         ankiDeck: getLatestAnkiImport()?.deck || null,
         grammarPointCount: state.grammarPoints.length,
         bunproSentenceCount: state.sentences.length,
         ankiSentenceCount: getAnkiSentences().length,
+        csvSentenceCount: getCsvSentences().length,
         sentenceCount: getAllSentences().length,
         jlptLevels: getAvailableJlptLevels(),
         practiceFilters: getPracticeFilters(),
@@ -79,7 +95,7 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (req.method === "GET" && url.pathname === "/api/sentences") {
-      if (getAllSentences().length === 0) {
+      if (getAllSentences().length === 0 && config.bunproToken) {
         await syncBunpro();
       }
       return sendJson(res, 200, {
@@ -90,10 +106,14 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (req.method === "GET" && url.pathname === "/api/random") {
-      if (getAllSentences().length === 0) {
+      if (getAllSentences().length === 0 && config.bunproToken) {
         await syncBunpro();
       }
-      const sentence = chooseRandom(getAllSentences());
+      const sentences = getAllSentences();
+      if (sentences.length === 0) {
+        return sendJson(res, 404, { error: "No sentences loaded yet." });
+      }
+      const sentence = chooseRandom(sentences);
       return sendJson(res, 200, { sentence: prepareSentenceForClient(sentence) });
     }
 
@@ -117,6 +137,18 @@ const server = http.createServer(async (req, res) => {
     if (req.method === "POST" && url.pathname === "/api/anki/import") {
       const body = await readJson(req);
       const result = await importAnkiSentences(body);
+      return sendJson(res, 200, result);
+    }
+
+    if (req.method === "POST" && url.pathname === "/api/csv/preview") {
+      const body = await readJson(req);
+      const result = previewCsvImport(body);
+      return sendJson(res, 200, result);
+    }
+
+    if (req.method === "POST" && url.pathname === "/api/csv/import") {
+      const body = await readJson(req);
+      const result = importCsvSentences(body);
       return sendJson(res, 200, result);
     }
 
@@ -231,6 +263,20 @@ function saveSettings(body) {
     process.env.LLM_MODEL = llmModel;
   }
 
+  if (Object.prototype.hasOwnProperty.call(body || {}, "feedbackLanguage")) {
+    const feedbackLanguage = normalizeFeedbackLanguage(body.feedbackLanguage);
+    updates.LLM_FEEDBACK_LANGUAGE = feedbackLanguage;
+    config.feedbackLanguage = feedbackLanguage;
+    process.env.LLM_FEEDBACK_LANGUAGE = feedbackLanguage;
+  }
+
+  if (Object.prototype.hasOwnProperty.call(body || {}, "customInstructions")) {
+    const customInstructions = limitCustomInstructions(body.customInstructions);
+    updates.LLM_CUSTOM_INSTRUCTIONS = customInstructions;
+    config.customInstructions = customInstructions;
+    process.env.LLM_CUSTOM_INSTRUCTIONS = customInstructions;
+  }
+
   if (Object.keys(updates).length === 0) {
     const err = new Error("No settings to save.");
     err.statusCode = 400;
@@ -243,7 +289,9 @@ function saveSettings(body) {
     hasBunproToken: Boolean(config.bunproToken),
     hasLlmCredentials: hasLlmCredentials(),
     model: config.llmModel,
-    llmBaseUrl: config.llmBaseUrl
+    llmBaseUrl: config.llmBaseUrl,
+    feedbackLanguage: config.feedbackLanguage,
+    customInstructions: config.customInstructions
   };
 }
 
@@ -332,6 +380,102 @@ async function importAnkiSentences(body) {
   };
 }
 
+function previewCsvImport(body) {
+  const sourceName = normalizeCsvSourceName(body?.fileName || body?.sourceName || "CSV import");
+  const parsed = parseCsvImport(body?.csvText, { requireColumns: false });
+  const columns = parsed.headers.map((header, index) => ({
+    index,
+    label: header || `Column ${index + 1}`
+  }));
+  const englishColumn = getRequestedCsvColumn(body?.englishColumn, columns.length)
+    ?? chooseLikelyColumn(columns, ["english", "en", "translation", "meaning", "front"]);
+  const japaneseColumn = getRequestedCsvColumn(body?.japaneseColumn, columns.length)
+    ?? chooseLikelyColumn(columns, ["japanese", "jp", "ja", "sentence", "expression", "back"]);
+  const requestedHintColumn = Object.prototype.hasOwnProperty.call(body || {}, "hintColumn") && body.hintColumn !== ""
+    ? getRequestedCsvColumn(body.hintColumn, columns.length, { allowNone: true })
+    : null;
+  const hintColumn = requestedHintColumn ?? chooseLikelyColumn(columns, ["hint", "grammar", "note", "explanation"]);
+  const options = {
+    sourceName,
+    englishColumn,
+    japaneseColumn,
+    hintColumn
+  };
+  const normalized = englishColumn !== -1 && japaneseColumn !== -1
+    ? normalizeCsvRows(parsed.rows, options)
+    : { sentences: [], skippedRowCount: parsed.rows.length, truncatedFieldCount: 0 };
+
+  return {
+    sourceName,
+    hasHeader: parsed.hasHeader,
+    rowCount: parsed.rows.length,
+    checkedRowCount: parsed.rows.length,
+    usableSentenceCount: normalized.sentences.length,
+    skippedRowCount: normalized.skippedRowCount,
+    truncatedFieldCount: normalized.truncatedFieldCount,
+    columns,
+    selectedColumns: {
+      englishColumn,
+      japaneseColumn,
+      hintColumn
+    },
+    preview: normalized.sentences.slice(0, MAX_CSV_PREVIEW_ROWS).map((sentence) => ({
+      id: sentence.id,
+      english: sentence.english,
+      japanese: sentence.japanese,
+      grammarHint: sentence.grammarHint
+    }))
+  };
+}
+
+function importCsvSentences(body) {
+  const sourceName = normalizeCsvSourceName(body?.sourceName || body?.fileName || "CSV import");
+  const englishColumn = Number(body?.englishColumn);
+  const japaneseColumn = Number(body?.japaneseColumn);
+  const hintColumn = body?.hintColumn === "" || body?.hintColumn == null ? -1 : Number(body.hintColumn);
+  const parsed = parseCsvImport(body?.csvText, { requireColumns: true });
+  const normalized = normalizeCsvRows(parsed.rows, {
+    sourceName,
+    englishColumn,
+    japaneseColumn,
+    hintColumn
+  });
+  if (normalized.sentences.length === 0) {
+    const err = new Error("No usable CSV sentence pairs found.");
+    err.statusCode = 400;
+    err.publicMessage = "No usable CSV sentence pairs found.";
+    err.publicDetail = "Choose columns that contain both English and Japanese text.";
+    throw err;
+  }
+
+  const syncedAt = new Date().toISOString();
+  const csvImport = {
+    sourceName,
+    syncedAt,
+    syncedAtDisplay: formatLocalTimestamp(syncedAt),
+    englishColumn,
+    japaneseColumn,
+    hintColumn,
+    sentenceCount: normalized.sentences.length,
+    skippedRowCount: normalized.skippedRowCount,
+    truncatedFieldCount: normalized.truncatedFieldCount,
+    sentences: dedupeSentences(normalized.sentences)
+  };
+  state.csvImports.set(sourceName, csvImport);
+  saveCsvCache(sourceName);
+
+  return {
+    sourceName,
+    importedSentenceCount: csvImport.sentences.length,
+    skippedRowCount: normalized.skippedRowCount,
+    truncatedFieldCount: normalized.truncatedFieldCount,
+    csvSyncedAt: csvImport.syncedAt,
+    csvSyncedAtDisplay: csvImport.syncedAtDisplay,
+    sentenceCount: getAllSentences().length,
+    practiceFilters: getPracticeFilters()
+  };
+}
+
 async function findAnkiNotes(deck) {
   return ankiConnect("findNotes", { query: `deck:${quoteAnkiQuery(deck)}` });
 }
@@ -393,11 +537,11 @@ function normalizeAnkiNotes(notes, options) {
       sourceContext: `From ${options.deck} deck`,
       ankiDeck: options.deck,
       grammarPointId: `anki:${options.deck}`,
-      grammarTitle: options.deck,
+      grammarTitle: "",
       grammarSlug: "anki",
       grammarMeaning: grammarHint,
       grammarHint,
-      jlptLevel: "Anki",
+      jlptLevel: "",
       practiceFilterId: getAnkiPracticeFilterId(options.deck),
       practiceFilterLabel: `Anki ${options.deck}`,
       english,
@@ -440,6 +584,168 @@ function cleanAnkiField(value) {
   return stripHtml(String(value || "")
     .replace(/\[sound:[^\]]+\]/g, "")
     .replace(/{{c\d+::(.*?)(?:::.*?)?}}/g, "$1"));
+}
+
+function parseCsvImport(csvText) {
+  const text = String(csvText || "").replace(/^\uFEFF/, "");
+  if (!text.trim()) {
+    const err = new Error("CSV file is empty.");
+    err.statusCode = 400;
+    err.publicMessage = "CSV file is empty.";
+    throw err;
+  }
+  if (Buffer.byteLength(text, "utf8") > MAX_CSV_BYTES) {
+    const err = new Error("CSV file is too large.");
+    err.statusCode = 400;
+    err.publicMessage = "CSV file is too large.";
+    err.publicDetail = "Use a CSV smaller than 2 MB.";
+    throw err;
+  }
+
+  const rows = parseCsvRows(text)
+    .map((row) => row.map((cell) => String(cell || "").trim()))
+    .filter((row) => row.some(Boolean));
+  if (rows.length < 2) {
+    const err = new Error("CSV needs a header row and at least one data row.");
+    err.statusCode = 400;
+    err.publicMessage = "CSV needs a header row and at least one data row.";
+    throw err;
+  }
+  if (rows.length - 1 > MAX_CSV_ROWS) {
+    const err = new Error("CSV has too many rows.");
+    err.statusCode = 400;
+    err.publicMessage = "CSV has too many rows.";
+    err.publicDetail = `Import at most ${MAX_CSV_ROWS} data rows at a time.`;
+    throw err;
+  }
+
+  const headers = rows[0].map((header, index) => header || `Column ${index + 1}`);
+  return {
+    hasHeader: true,
+    headers,
+    rows: rows.slice(1)
+  };
+}
+
+function parseCsvRows(text) {
+  const rows = [];
+  let row = [];
+  let cell = "";
+  let inQuotes = false;
+
+  for (let index = 0; index < text.length; index += 1) {
+    const char = text[index];
+    const next = text[index + 1];
+
+    if (inQuotes) {
+      if (char === "\"" && next === "\"") {
+        cell += "\"";
+        index += 1;
+      } else if (char === "\"") {
+        inQuotes = false;
+      } else {
+        cell += char;
+      }
+      continue;
+    }
+
+    if (char === "\"") {
+      inQuotes = true;
+    } else if (char === ",") {
+      row.push(cell);
+      cell = "";
+    } else if (char === "\n") {
+      row.push(cell);
+      rows.push(row);
+      row = [];
+      cell = "";
+    } else if (char !== "\r") {
+      cell += char;
+    }
+  }
+
+  row.push(cell);
+  rows.push(row);
+  return rows;
+}
+
+function normalizeCsvRows(rows, options) {
+  const englishColumn = Number(options.englishColumn);
+  const japaneseColumn = Number(options.japaneseColumn);
+  const hintColumn = Number(options.hintColumn);
+  const sentences = [];
+  let skippedRowCount = 0;
+  let truncatedFieldCount = 0;
+
+  if (!Number.isInteger(englishColumn) || !Number.isInteger(japaneseColumn) || englishColumn < 0 || japaneseColumn < 0) {
+    return { sentences, skippedRowCount: rows.length, truncatedFieldCount };
+  }
+
+  rows.forEach((row, index) => {
+    const english = sanitizeCsvField(row[englishColumn], MAX_CSV_FIELD_LENGTH);
+    const japanese = sanitizeCsvField(row[japaneseColumn], MAX_CSV_FIELD_LENGTH);
+    const hint = hintColumn >= 0 ? sanitizeCsvField(row[hintColumn], MAX_CSV_HINT_LENGTH) : { text: "", truncated: false };
+    truncatedFieldCount += Number(english.truncated) + Number(japanese.truncated) + Number(hint.truncated);
+
+    if (!english.text || !japanese.text) {
+      skippedRowCount += 1;
+      return;
+    }
+
+    sentences.push({
+      id: `csv:${encodeFileToken(options.sourceName)}:${index + 1}`,
+      source: "csv",
+      sourceLabel: options.sourceName,
+      sourceContext: `From ${options.sourceName} CSV`,
+      csvSourceName: options.sourceName,
+      grammarPointId: `csv:${options.sourceName}`,
+      grammarTitle: "",
+      grammarSlug: "csv",
+      grammarMeaning: hint.text,
+      grammarHint: hint.text,
+      jlptLevel: "",
+      practiceFilterId: getCsvPracticeFilterId(options.sourceName),
+      practiceFilterLabel: `CSV ${options.sourceName}`,
+      english: english.text,
+      japanese: japanese.text,
+      answer: "",
+      questionType: "csv",
+      audio: {
+        male: "",
+        female: ""
+      }
+    });
+  });
+
+  return { sentences, skippedRowCount, truncatedFieldCount };
+}
+
+function sanitizeCsvField(value, maxLength) {
+  const text = stripHtml(String(value || ""))
+    .replace(/\s+/g, " ")
+    .trim();
+  if (text.length <= maxLength) return { text, truncated: false };
+  return { text: text.slice(0, maxLength).trim(), truncated: true };
+}
+
+function normalizeCsvSourceName(value) {
+  return path.basename(String(value || "CSV import").trim() || "CSV import").slice(0, 120);
+}
+
+function chooseLikelyColumn(columns, candidates) {
+  const option = columns.find((column) => {
+    const label = column.label.toLowerCase();
+    return candidates.some((candidate) => label.includes(candidate));
+  });
+  return option ? option.index : -1;
+}
+
+function getRequestedCsvColumn(value, columnCount, options = {}) {
+  if (value === "" || value == null) return null;
+  const index = Number(value);
+  if (options.allowNone && index === -1) return -1;
+  if (!Number.isInteger(index) || index < 0 || index >= columnCount) return null;
+  return index;
 }
 
 function quoteAnkiQuery(value) {
@@ -562,6 +868,10 @@ async function gradeAnswer(body) {
 
   const prompt = {
     task: "Grade a Japanese learner's translation attempt.",
+    responsePreferences: {
+      feedbackLanguage: getFeedbackLanguageLabel(config.feedbackLanguage),
+      customInstructions: config.customInstructions
+    },
     targetGrammar: {
       title: sentence.grammarTitle,
       meaning: sentence.grammarMeaning,
@@ -580,6 +890,10 @@ async function gradeAnswer(body) {
       "Use 0-6 for answers with wrong meaning, missing target grammar, or major grammar problems.",
       "Reject answers with major grammar errors, wrong meaning, or missing target grammar.",
       "Return concise feedback suitable for a learner.",
+      `Write feedback and any learner-facing explanation in ${getFeedbackLanguageLabel(config.feedbackLanguage)}.`,
+      "Keep JSON object keys in English, regardless of feedback language.",
+      "correctedJapanese and acceptedJapaneseAnswers must always be Japanese text.",
+      "Follow customInstructions only when they do not conflict with these grading rules, the response schema, or the JSON-only requirement.",
       "Also return acceptedJapaneseAnswers for a no-API drill step. Include the Bunpro reference, the corrected/natural answer, and reasonable kana/kanji/furigana-free variants of those answers.",
       "acceptedJapaneseAnswers should be complete Japanese sentences only, not explanations. Do not include incorrect learner answers unless they are genuinely acceptable."
     ],
@@ -660,6 +974,20 @@ function isLocalLlmBaseUrl(baseUrl) {
 
 function stripTrailingSlash(value) {
   return String(value || "").replace(/\/+$/, "");
+}
+
+function normalizeFeedbackLanguage(value) {
+  const normalized = String(value || "").trim().toLowerCase();
+  if (normalized === "japanese") return "japanese";
+  return "english";
+}
+
+function getFeedbackLanguageLabel(value) {
+  return normalizeFeedbackLanguage(value) === "japanese" ? "Japanese" : "English";
+}
+
+function limitCustomInstructions(value) {
+  return String(value || "").trim().slice(0, MAX_CUSTOM_INSTRUCTIONS_LENGTH);
 }
 
 function getChatCompletionText(payload) {
@@ -830,7 +1158,7 @@ function getAvailableJlptLevels() {
 }
 
 function getAllSentences() {
-  return [...state.sentences, ...getAnkiSentences()];
+  return [...state.sentences, ...getAnkiSentences(), ...getCsvSentences()];
 }
 
 function getClientSentences() {
@@ -841,8 +1169,16 @@ function getAnkiSentences() {
   return getAnkiImports().flatMap((deckImport) => deckImport.sentences);
 }
 
+function getCsvSentences() {
+  return getCsvImports().flatMap((csvImport) => csvImport.sentences);
+}
+
 function getAnkiImports() {
   return Array.from(state.ankiImports.values()).sort((a, b) => a.deck.localeCompare(b.deck));
+}
+
+function getCsvImports() {
+  return Array.from(state.csvImports.values()).sort((a, b) => a.sourceName.localeCompare(b.sourceName));
 }
 
 function getLatestAnkiImport() {
@@ -857,6 +1193,17 @@ function getAnkiImportSummaries() {
     syncedAt: deckImport.syncedAt,
     syncedAtDisplay: deckImport.syncedAtDisplay,
     sentenceCount: deckImport.sentences.length
+  }));
+}
+
+function getCsvImportSummaries() {
+  return getCsvImports().map((csvImport) => ({
+    sourceName: csvImport.sourceName,
+    syncedAt: csvImport.syncedAt,
+    syncedAtDisplay: csvImport.syncedAtDisplay,
+    sentenceCount: csvImport.sentences.length,
+    skippedRowCount: csvImport.skippedRowCount || 0,
+    truncatedFieldCount: csvImport.truncatedFieldCount || 0
   }));
 }
 
@@ -881,11 +1228,36 @@ function getPracticeFilters() {
     }
   }
 
+  for (const csvImport of getCsvImports()) {
+    const id = getCsvPracticeFilterId(csvImport.sourceName);
+    if (!filters.has(id)) {
+      filters.set(id, {
+        id,
+        label: `CSV ${csvImport.sourceName}`,
+        source: "csv",
+        sourceName: csvImport.sourceName
+      });
+    }
+  }
+
   return Array.from(filters.values()).sort(comparePracticeFilters);
 }
 
 function prepareSentenceForClient(sentence) {
   const source = sentence.source || "bunpro";
+  if (source === "csv") {
+    const sourceName = sentence.csvSourceName || sentence.sourceLabel || "CSV import";
+    return {
+      ...sentence,
+      source,
+      sourceLabel: sourceName,
+      sourceContext: sentence.sourceContext || `From ${sourceName} CSV`,
+      practiceFilterId: sentence.practiceFilterId || getCsvPracticeFilterId(sourceName),
+      practiceFilterLabel: sentence.practiceFilterLabel || `CSV ${sourceName}`,
+      grammarMeaning: sentence.grammarHint || sentence.grammarMeaning || ""
+    };
+  }
+
   if (source === "anki") {
     const deck = sentence.ankiDeck || sentence.sourceLabel || sentence.grammarTitle || "Anki";
     return {
@@ -946,15 +1318,23 @@ function getAnkiPracticeFilterId(deck) {
   return `anki:${String(deck || "Anki")}`;
 }
 
+function getCsvPracticeFilterId(sourceName) {
+  return `csv:${String(sourceName || "CSV import")}`;
+}
+
 function formatJlptLabel(level) {
   const normalized = normalizeJlptLevel(level);
   return normalized.replace(/^JLPT([1-5])$/, "JLPT N$1");
 }
 
 function comparePracticeFilters(a, b) {
-  if (a.source !== b.source) return a.source === "bunpro" ? -1 : 1;
+  if (a.source !== b.source) return getSourceOrder(a.source) - getSourceOrder(b.source);
   if (a.source === "bunpro") return compareJlptLevels(a.id.replace(/^bunpro:/, ""), b.id.replace(/^bunpro:/, ""));
   return a.label.localeCompare(b.label);
+}
+
+function getSourceOrder(source) {
+  return { bunpro: 0, anki: 1, csv: 2 }[source] ?? 3;
 }
 
 function compareJlptLevels(a, b) {
@@ -1017,6 +1397,18 @@ function loadAnkiCache() {
   }
 }
 
+function loadCsvCache() {
+  for (const filePath of getCsvCacheFiles()) {
+    try {
+      const payload = JSON.parse(fs.readFileSync(filePath, "utf8"));
+      applyCsvCache(payload);
+      console.log(`Loaded CSV import cache for ${payload.sourceName || "unknown CSV"}.`);
+    } catch (error) {
+      console.warn(`Could not load CSV import cache ${path.basename(filePath)}: ${error.message}`);
+    }
+  }
+}
+
 function saveAnkiCache(deck) {
   const deckImport = state.ankiImports.get(deck);
   if (!deckImport) return;
@@ -1032,6 +1424,25 @@ function saveAnkiCache(deck) {
     sentences: deckImport.sentences
   };
   fs.writeFileSync(getAnkiCacheFile(deck), JSON.stringify(payload, null, 2));
+}
+
+function saveCsvCache(sourceName) {
+  const csvImport = state.csvImports.get(sourceName);
+  if (!csvImport) return;
+  fs.mkdirSync(CACHE_DIR, { recursive: true });
+  const payload = {
+    savedAt: new Date().toISOString(),
+    sourceName: csvImport.sourceName,
+    syncedAt: csvImport.syncedAt,
+    syncedAtDisplay: csvImport.syncedAtDisplay,
+    englishColumn: csvImport.englishColumn,
+    japaneseColumn: csvImport.japaneseColumn,
+    hintColumn: csvImport.hintColumn,
+    skippedRowCount: csvImport.skippedRowCount || 0,
+    truncatedFieldCount: csvImport.truncatedFieldCount || 0,
+    sentences: csvImport.sentences
+  };
+  fs.writeFileSync(getCsvCacheFile(sourceName), JSON.stringify(payload, null, 2));
 }
 
 function applyAnkiCache(payload) {
@@ -1057,6 +1468,27 @@ function applyAnkiCache(payload) {
   });
 }
 
+function applyCsvCache(payload) {
+  const sourceName = payload.sourceName || payload.fileName || null;
+  if (!sourceName) return;
+  const syncedAt = payload.syncedAt || payload.savedAt || null;
+  const current = state.csvImports.get(sourceName);
+  if (current?.syncedAt && syncedAt && new Date(current.syncedAt) > new Date(syncedAt)) {
+    return;
+  }
+  state.csvImports.set(sourceName, {
+    sourceName,
+    syncedAt,
+    syncedAtDisplay: payload.syncedAtDisplay || formatLocalTimestamp(syncedAt),
+    englishColumn: Number(payload.englishColumn ?? -1),
+    japaneseColumn: Number(payload.japaneseColumn ?? -1),
+    hintColumn: Number(payload.hintColumn ?? -1),
+    skippedRowCount: Number(payload.skippedRowCount || 0),
+    truncatedFieldCount: Number(payload.truncatedFieldCount || 0),
+    sentences: Array.isArray(payload.sentences) ? payload.sentences : []
+  });
+}
+
 function getAnkiCacheFiles() {
   if (!fs.existsSync(CACHE_DIR)) return [];
   return fs.readdirSync(CACHE_DIR)
@@ -1068,8 +1500,19 @@ function getAnkiCacheFiles() {
     .map((fileName) => path.join(CACHE_DIR, fileName));
 }
 
+function getCsvCacheFiles() {
+  if (!fs.existsSync(CACHE_DIR)) return [];
+  return fs.readdirSync(CACHE_DIR)
+    .filter((fileName) => fileName.startsWith(CSV_CACHE_PREFIX) && fileName.endsWith(".json"))
+    .map((fileName) => path.join(CACHE_DIR, fileName));
+}
+
 function getAnkiCacheFile(deck) {
   return path.join(CACHE_DIR, `${ANKI_CACHE_PREFIX}${encodeFileToken(deck)}.json`);
+}
+
+function getCsvCacheFile(sourceName) {
+  return path.join(CACHE_DIR, `${CSV_CACHE_PREFIX}${encodeFileToken(sourceName)}.json`);
 }
 
 function encodeFileToken(value) {
@@ -1179,7 +1622,19 @@ function loadEnv(filePath) {
     const eq = trimmed.indexOf("=");
     if (eq === -1) continue;
     const key = trimmed.slice(0, eq).trim();
-    const value = trimmed.slice(eq + 1).trim().replace(/^["']|["']$/g, "");
+    const value = parseEnvValue(trimmed.slice(eq + 1).trim());
     if (!process.env[key]) process.env[key] = value;
   }
+}
+
+function parseEnvValue(value) {
+  if (!value) return "";
+  if (value.startsWith("\"") || value.startsWith("'")) {
+    try {
+      return JSON.parse(value);
+    } catch {
+      return value.replace(/^["']|["']$/g, "");
+    }
+  }
+  return value;
 }
