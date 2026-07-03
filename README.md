@@ -22,7 +22,7 @@ The app runs on your own computer. You do not need Node.js, npm, Git, or a termi
 
 ## Quick Start
 
-1. Open the GitHub **Releases** page for this project.
+1. Open the GitHub [**Releases**](https://github.com/h7-v/japanese-full-sentence-trainer/releases) page for this project.
 2. Download the release ZIP for your computer.
 3. Unzip it.
 4. Keep the files together in the same folder.
