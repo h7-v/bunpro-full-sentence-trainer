@@ -334,8 +334,8 @@ Running from source is only for people who want to develop the app or avoid the 
 You need Node.js 18 or newer.
 
 ```sh
-git clone https://github.com/h7-v/bunpro-full-sentence-trainer.git
-cd bunpro-full-sentence-trainer
+git clone https://github.com/h7-v/japanese-full-sentence-trainer.git
+cd japanese-full-sentence-trainer
 npm start
 ```
 
