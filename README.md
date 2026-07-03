@@ -6,6 +6,20 @@ It shows you an English sentence, asks you to type the Japanese, and uses an LLM
 
 The app runs on your own computer. You do not need Node.js, npm, Git, or a terminal if you download a packaged release.
 
+## Screenshots
+
+![Practice prompt](docs/images/01.png)
+
+![Correct answer feedback](docs/images/02.png)
+
+![Incorrect answer with retry drill](docs/images/03.png)
+
+![Grammar hints and grading feedback](docs/images/04.png)
+
+![Sources and settings](docs/images/05.png)
+
+![Import setup](docs/images/06.png)
+
 ## Quick Start
 
 1. Open the GitHub **Releases** page for this project.
@@ -30,6 +44,8 @@ Most users need only two things:
 Gemini is the recommended LLM provider because it has a free API tier. Get a Gemini API key here:
 
 [https://aistudio.google.com/apikey](https://aistudio.google.com/apikey)
+
+You can also use OpenAI or a local LLM server if it provides an OpenAI-compatible Chat Completions API and can reliably return JSON.
 
 You can get practice sentences from any of these:
 
@@ -71,6 +87,10 @@ LLM model: gpt-5.4-mini
 ```
 
 OpenAI API usage is billed separately from ChatGPT Plus/Pro.
+
+If you use a local LLM, enter your local OpenAI-compatible base URL and model in the same **LLM** tab. Local model quality varies; the model needs to understand English and Japanese, follow grading instructions, and return valid JSON.
+
+To choose whether grading feedback is written in English or Japanese, open **Model Personalisation** and change **Model response language**.
 
 ### 2. Try Demo Sentences
 
@@ -137,16 +157,6 @@ CSV imports are capped at 5,000 rows and 2 MB. Very long fields are shortened be
 - Open **Model Personalisation** to choose English/Japanese feedback and add optional response instructions.
 
 The app keeps a count of questions answered this session. Pressing Next without grading does not increase the count.
-
-## Screenshots
-
-![Practice prompt](docs/images/01.png)
-
-![Correct answer feedback](docs/images/02.png)
-
-![Incorrect answer with retry drill](docs/images/03.png)
-
-![Grammar hints and grading feedback](docs/images/04.png)
 
 ## Files In The Release Folder
 
