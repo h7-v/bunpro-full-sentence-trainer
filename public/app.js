@@ -1,4 +1,5 @@
 const statusText = document.querySelector("#statusText");
+const appVersion = document.querySelector("#appVersion");
 const syncButton = document.querySelector("#syncButton");
 const previousButton = document.querySelector("#previousButton");
 const skipMissedButton = document.querySelector("#skipMissedButton");
@@ -488,6 +489,10 @@ async function gradeAnswer(event) {
 }
 
 function renderStatus(status) {
+  if (status.appVersion) {
+    appVersion.textContent = `v${status.appVersion}`;
+  }
+
   const llmStatus = status.hasLlmCredentials === false ? "LLM key missing" : `Grading with ${status.model || "configured model"}`;
   const sourceParts = [];
   const totalSentences = getAvailableSentenceCount(status);

@@ -6,6 +6,8 @@ const ROOT = path.resolve(__dirname, "..");
 const DIST_DIR = path.join(ROOT, "dist");
 const PUBLIC_DIR = path.join(ROOT, "public");
 const MIN_BUILD_NODE_MAJOR = 22;
+const RELEASE_NAME_PREFIX = "japanese-fst-";
+const VERSION_PATTERN = /^\d+\.\d+\.\d+$/;
 
 const currentNodeMajor = Number(process.versions.node.split(".")[0]);
 if (currentNodeMajor < MIN_BUILD_NODE_MAJOR) {
@@ -18,7 +20,7 @@ if (currentNodeMajor < MIN_BUILD_NODE_MAJOR) {
   console.error("  nvm install 22");
   console.error("  nvm use 22");
   console.error("  npm install");
-  console.error("  npm run package:win-x64");
+  console.error("  npm run package:win-x64 -- 0.1.0");
   process.exit(1);
 }
 
@@ -42,8 +44,28 @@ const TARGETS = {
 };
 
 const requestedTarget = process.argv[2];
+const releaseVersion = process.argv[3];
 if (!requestedTarget || (!TARGETS[requestedTarget] && requestedTarget !== "all")) {
-  console.error(`Usage: node scripts/package-release.js ${Object.keys(TARGETS).join("|")}|all`);
+  console.error(`Usage: node scripts/package-release.js ${Object.keys(TARGETS).join("|")}|all x.x.x`);
+  console.error("");
+  console.error("Example:");
+  console.error("  npm run package:win-x64 -- 0.1.0");
+  process.exit(1);
+}
+
+if (!VERSION_PATTERN.test(releaseVersion || "")) {
+  console.error("A release version is required and must use x.x.x format.");
+  console.error("");
+  console.error("Example:");
+  console.error("  npm run package:all -- 0.1.0");
+  process.exit(1);
+}
+
+const packageJson = JSON.parse(fs.readFileSync(path.join(ROOT, "package.json"), "utf8"));
+if (releaseVersion !== packageJson.version) {
+  console.error(`Release version ${releaseVersion} does not match package.json version ${packageJson.version}.`);
+  console.error("");
+  console.error(`Use ${packageJson.version}, or update package.json before building.`);
   process.exit(1);
 }
 
@@ -52,11 +74,12 @@ const targets = requestedTarget === "all"
   : [requestedTarget];
 
 for (const targetName of targets) {
-  buildRelease(targetName, TARGETS[targetName]);
+  buildRelease(targetName, TARGETS[targetName], releaseVersion);
 }
 
-function buildRelease(targetName, target) {
-  const releaseDir = path.join(DIST_DIR, targetName);
+function buildRelease(targetName, target, version) {
+  const releaseName = `${RELEASE_NAME_PREFIX}v${version}-${targetName}`;
+  const releaseDir = path.join(DIST_DIR, releaseName);
   const executablePath = path.join(releaseDir, target.executableName);
 
   fs.rmSync(releaseDir, { recursive: true, force: true });
@@ -67,13 +90,13 @@ function buildRelease(targetName, target) {
   if (targetName.startsWith("win-")) {
     writeWindowsLauncher(releaseDir, target.executableName);
   }
-  writeReleaseNotes(releaseDir, target.executableName, targetName);
+  writeReleaseNotes(releaseDir, target.executableName, targetName, version);
 
   if (process.platform !== "win32") {
     fs.chmodSync(executablePath, 0o755);
   }
 
-  console.log(`Built ${targetName}: ${releaseDir}`);
+  console.log(`Built ${releaseName}: ${releaseDir}`);
 }
 
 function runPkg(pkgTarget, executablePath) {
@@ -146,7 +169,7 @@ function writeWindowsLauncher(releaseDir, executableName) {
   fs.writeFileSync(path.join(releaseDir, "Start Japanese Full Sentence Trainer.cmd"), `${launcher}\r\n`);
 }
 
-function writeReleaseNotes(releaseDir, executableName, targetName) {
+function writeReleaseNotes(releaseDir, executableName, targetName, version) {
   const windowsNote = targetName.startsWith("win-")
     ? [
         "On Windows, you can double-click Start Japanese Full Sentence Trainer.cmd instead of the exe.",
@@ -155,6 +178,7 @@ function writeReleaseNotes(releaseDir, executableName, targetName) {
     : [];
   const note = [
     "Japanese Full Sentence Trainer",
+    `Version ${version}`,
     "",
     "Double-click the app executable to start the local trainer.",
     "It will open your default browser automatically.",

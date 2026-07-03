@@ -14,6 +14,7 @@ const ANKI_CACHE_PREFIX = "anki-deck-";
 const CSV_CACHE_PREFIX = "csv-file-";
 const BUNPRO_BASE_URL = "https://api.bunpro.jp/api/frontend";
 const ANKI_CONNECT_URL = process.env.ANKI_CONNECT_URL || "http://127.0.0.1:8765";
+const APP_VERSION = "0.1.0";
 const DEFAULT_LLM_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/openai";
 const DEFAULT_LLM_MODEL = "gemini-3.5-flash";
 const DEFAULT_FEEDBACK_LANGUAGE = "english";
@@ -73,6 +74,7 @@ const server = http.createServer(async (req, res) => {
 
     if (req.method === "GET" && url.pathname === "/api/status") {
       return sendJson(res, 200, {
+        appVersion: APP_VERSION,
         hasBunproToken: Boolean(config.bunproToken),
         hasOpenAiKey: hasLlmCredentials(),
         hasLlmCredentials: hasLlmCredentials(),

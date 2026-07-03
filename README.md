@@ -355,16 +355,27 @@ Building releases requires Node.js 22 or newer because the packaging tool runs o
 
 ```sh
 npm install
-npm run package:mac-arm64
-npm run package:mac-x64
-npm run package:win-x64
-npm run package:linux-x64
+npm run package:mac-arm64 -- 0.1.0
+npm run package:mac-x64 -- 0.1.0
+npm run package:win-x64 -- 0.1.0
+npm run package:linux-x64 -- 0.1.0
 ```
 
 You can also build all configured targets:
 
 ```sh
-npm run package:all
+npm run package:all -- 0.1.0
+```
+
+The version argument is required and must use `x.x.x` format.
+
+The output folders are:
+
+```text
+dist/japanese-fst-v0.1.0-win-x64
+dist/japanese-fst-v0.1.0-macos-arm64
+dist/japanese-fst-v0.1.0-macos-x64
+dist/japanese-fst-v0.1.0-linux-x64
 ```
 
 Each release folder includes a standalone executable, `public/`, `.env.example`, `cache/`, and `START-HERE.txt`. Windows builds also include `Start Japanese Full Sentence Trainer.cmd`. Zip the whole folder for release.
