@@ -102,7 +102,7 @@ Gemini may offer unpaid quota, but Google has specific Gemini API terms covering
 
 Paste your provider key into **LLM API key**, then click **Save LLM settings**.
 
-To choose whether grading feedback is written in English or Japanese, open **Model Personalisation** and change **Model response language**.
+To choose whether grading feedback is written in English, Japanese, or another language, open **Model Personalisation** and change **Model response language**.
 
 ### Provider Terms Note
 
@@ -174,7 +174,7 @@ CSV imports are capped at 5,000 rows and 2 MB. Very long fields are shortened be
 - Incorrect answers can be retried after the delay set in **Other**.
 - Use **Practice filters** to choose which Bunpro levels, Anki decks, CSV files, or demo sentences appear.
 - Enable **Show grammar hints** if you want Bunpro grammar points or imported hint fields shown.
-- Open **Model Personalisation** to choose English/Japanese feedback and add optional response instructions.
+- Open **Model Personalisation** to choose the feedback language and add optional response instructions.
 
 The app keeps a count of questions answered this session. Pressing Next without grading does not increase the count.
 
@@ -385,16 +385,16 @@ Building releases requires Node.js 22 or newer because the packaging tool runs o
 
 ```sh
 npm install
-npm run package:mac-arm64 -- 0.1.0
-npm run package:mac-x64 -- 0.1.0
-npm run package:win-x64 -- 0.1.0
-npm run package:linux-x64 -- 0.1.0
+npm run package:mac-arm64 -- 0.2.0
+npm run package:mac-x64 -- 0.2.0
+npm run package:win-x64 -- 0.2.0
+npm run package:linux-x64 -- 0.2.0
 ```
 
 You can also build all configured targets:
 
 ```sh
-npm run package:all -- 0.1.0
+npm run package:all -- 0.2.0
 ```
 
 The version argument is required and must use `x.x.x` format.
@@ -402,10 +402,10 @@ The version argument is required and must use `x.x.x` format.
 The output folders are:
 
 ```text
-dist/japanese-fst-v0.1.0-win-x64
-dist/japanese-fst-v0.1.0-macos-arm64
-dist/japanese-fst-v0.1.0-macos-x64
-dist/japanese-fst-v0.1.0-linux-x64
+dist/japanese-fst-v0.2.0-win-x64
+dist/japanese-fst-v0.2.0-macos-arm64
+dist/japanese-fst-v0.2.0-macos-x64
+dist/japanese-fst-v0.2.0-linux-x64
 ```
 
 Each release folder includes a standalone executable, `public/`, `.env.example`, `cache/`, and `START-HERE.txt`. Windows builds also include `Start Japanese Full Sentence Trainer.cmd`. Zip the whole folder for release.

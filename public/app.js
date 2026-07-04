@@ -58,6 +58,9 @@ const saveLlmSettingsButton = document.querySelector("#saveLlmSettingsButton");
 const llmSettingsStatus = document.querySelector("#llmSettingsStatus");
 const feedbackSettingsForm = document.querySelector("#feedbackSettingsForm");
 const feedbackLanguageInputs = Array.from(document.querySelectorAll("input[name='feedbackLanguage']"));
+const customFeedbackLanguageField = document.querySelector("#customFeedbackLanguageField");
+const customFeedbackLanguageInput = document.querySelector("#customFeedbackLanguageInput");
+const customFeedbackLanguageCounter = document.querySelector("#customFeedbackLanguageCounter");
 const customInstructionsInput = document.querySelector("#customInstructionsInput");
 const customInstructionsCounter = document.querySelector("#customInstructionsCounter");
 const saveFeedbackSettingsButton = document.querySelector("#saveFeedbackSettingsButton");
@@ -242,6 +245,10 @@ demoSentencesToggle.addEventListener("change", updateDemoSentencesPreference);
 bunproSettingsForm.addEventListener("submit", saveBunproSettings);
 llmSettingsForm.addEventListener("submit", saveLlmSettings);
 feedbackSettingsForm.addEventListener("submit", saveFeedbackSettings);
+for (const input of feedbackLanguageInputs) {
+  input.addEventListener("change", updateCustomFeedbackLanguageVisibility);
+}
+customFeedbackLanguageInput.addEventListener("input", updateCustomFeedbackLanguageCounter);
 customInstructionsInput.addEventListener("input", updateCustomInstructionsCounter);
 ankiConnectButton.addEventListener("click", loadAnkiDecks);
 ankiDeckSelect.addEventListener("change", loadAnkiFields);
@@ -590,11 +597,22 @@ function updateSettingsPlaceholders(status) {
   llmBaseUrlInput.placeholder = status.llmBaseUrl || "https://generativelanguage.googleapis.com/v1beta/openai";
   llmApiKeyInput.placeholder = status.hasLlmCredentials ? "Key saved" : "Paste key to save";
   llmModelInput.placeholder = status.model || "gemini-3.5-flash";
-  const feedbackLanguage = String(status.feedbackLanguage || "english").toLowerCase();
+  const feedbackLanguage = String(status.feedbackLanguage || "english").trim();
+  const normalizedFeedbackLanguage = feedbackLanguage.toLowerCase();
   for (const input of feedbackLanguageInputs) {
-    input.checked = input.value === feedbackLanguage;
+    input.checked = input.value === normalizedFeedbackLanguage;
+  }
+  const isCustomFeedbackLanguage = !["english", "japanese"].includes(normalizedFeedbackLanguage);
+  if (isCustomFeedbackLanguage) {
+    const otherInput = feedbackLanguageInputs.find((input) => input.value === "other");
+    if (otherInput) otherInput.checked = true;
+    customFeedbackLanguageInput.value = feedbackLanguage;
+  } else {
+    customFeedbackLanguageInput.value = "";
   }
   customInstructionsInput.value = status.customInstructions || "";
+  updateCustomFeedbackLanguageVisibility();
+  updateCustomFeedbackLanguageCounter();
   updateCustomInstructionsCounter();
 }
 
@@ -659,6 +677,10 @@ async function saveLlmSettings(event) {
 async function saveFeedbackSettings(event) {
   event.preventDefault();
   const feedbackLanguage = getSelectedFeedbackLanguage();
+  if (!feedbackLanguage) {
+    feedbackSettingsStatus.textContent = "Enter a response language first.";
+    return;
+  }
   const customInstructions = customInstructionsInput.value.trim();
 
   setSettingsBusy(true, "Saving model personalisation...");
@@ -680,7 +702,19 @@ async function saveFeedbackSettings(event) {
 }
 
 function getSelectedFeedbackLanguage() {
-  return feedbackLanguageInputs.find((input) => input.checked)?.value || "english";
+  const selected = feedbackLanguageInputs.find((input) => input.checked)?.value || "english";
+  if (selected !== "other") return selected;
+  return customFeedbackLanguageInput.value.trim();
+}
+
+function updateCustomFeedbackLanguageVisibility() {
+  const isOther = (feedbackLanguageInputs.find((input) => input.checked)?.value || "english") === "other";
+  customFeedbackLanguageField.classList.toggle("hidden", !isOther);
+  customFeedbackLanguageCounter.classList.toggle("hidden", !isOther);
+}
+
+function updateCustomFeedbackLanguageCounter() {
+  customFeedbackLanguageCounter.textContent = `${customFeedbackLanguageInput.value.length} / ${customFeedbackLanguageInput.maxLength} characters`;
 }
 
 function updateCustomInstructionsCounter() {

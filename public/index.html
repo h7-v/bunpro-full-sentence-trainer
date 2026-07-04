@@ -319,8 +319,17 @@
                       <input type="radio" name="feedbackLanguage" value="japanese">
                       Japanese
                     </label>
+                    <label>
+                      <input type="radio" name="feedbackLanguage" value="other">
+                      Other
+                    </label>
                   </div>
                 </fieldset>
+                <label id="customFeedbackLanguageField" class="settings-field hidden" for="customFeedbackLanguageInput">
+                  Other response language
+                  <input id="customFeedbackLanguageInput" type="text" maxlength="40" autocomplete="off" spellcheck="true" placeholder="Example: Spanish">
+                </label>
+                <p id="customFeedbackLanguageCounter" class="settings-note hidden">0 / 40 characters</p>
                 <label class="settings-field" for="customInstructionsInput">
                   Extra model instructions
                   <textarea id="customInstructionsInput" maxlength="800" rows="5" autocomplete="off" spellcheck="true" placeholder="Example: Be encouraging and explain mistakes like a friendly tutor."></textarea>

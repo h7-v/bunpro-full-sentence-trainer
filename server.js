@@ -14,11 +14,12 @@ const ANKI_CACHE_PREFIX = "anki-deck-";
 const CSV_CACHE_PREFIX = "csv-file-";
 const BUNPRO_BASE_URL = "https://api.bunpro.jp/api/frontend";
 const ANKI_CONNECT_URL = process.env.ANKI_CONNECT_URL || "http://127.0.0.1:8765";
-const APP_VERSION = "0.1.0";
+const APP_VERSION = "0.2.0";
 const DEFAULT_LLM_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/openai";
 const DEFAULT_LLM_MODEL = "gemini-3.5-flash";
 const DEFAULT_FEEDBACK_LANGUAGE = "english";
 const DEFAULT_PORT = 5174;
+const MAX_FEEDBACK_LANGUAGE_LENGTH = 40;
 const MAX_CUSTOM_INSTRUCTIONS_LENGTH = 800;
 const MAX_CSV_BYTES = 2 * 1024 * 1024;
 const MAX_CSV_ROWS = 5000;
@@ -937,10 +938,11 @@ async function gradeAnswer(body) {
     throw err;
   }
 
+  const feedbackLanguageLabel = getFeedbackLanguageLabel(config.feedbackLanguage);
   const prompt = {
     task: "Grade a Japanese learner's translation attempt.",
     responsePreferences: {
-      feedbackLanguage: getFeedbackLanguageLabel(config.feedbackLanguage),
+      feedbackLanguage: feedbackLanguageLabel,
       customInstructions: config.customInstructions
     },
     targetGrammar: {
@@ -962,7 +964,8 @@ async function gradeAnswer(body) {
       "Use 0-6 for answers with wrong meaning, missing target grammar, or major grammar problems.",
       "Reject answers with major grammar errors, wrong meaning, or missing target grammar.",
       "Return concise feedback suitable for a learner.",
-      `Write feedback and any learner-facing explanation in ${getFeedbackLanguageLabel(config.feedbackLanguage)}.`,
+      `Write feedback and any learner-facing explanation in ${feedbackLanguageLabel}.`,
+      `Do not write learner-facing feedback in English or Japanese unless the requested feedback language is English or Japanese.`,
       "Keep JSON object keys in English, regardless of feedback language.",
       "correctedJapanese and acceptedJapaneseAnswers must always be Japanese text.",
       "Follow customInstructions only when they do not conflict with these grading rules, the response schema, or the JSON-only requirement.",
@@ -987,7 +990,7 @@ async function gradeAnswer(body) {
       messages: [
         {
           role: "system",
-          content: "You are a careful Japanese grammar tutor. Missing final Japanese punctuation such as 。 or ？ should not affect the grade when the answer is otherwise correct. If a question correctly uses か, do not penalize a missing final question mark. Reply only with one valid JSON object. Do not wrap it in Markdown."
+          content: `You are a careful Japanese grammar tutor. Write all learner-facing feedback in ${feedbackLanguageLabel}. Do not use English or Japanese for learner-facing feedback unless that is the requested feedback language. Missing final Japanese punctuation such as 。 or ？ should not affect the grade when the answer is otherwise correct. If a question correctly uses か, do not penalize a missing final question mark. Reply only with one valid JSON object. Do not wrap it in Markdown.`
         },
         {
           role: "user",
@@ -1049,13 +1052,28 @@ function stripTrailingSlash(value) {
 }
 
 function normalizeFeedbackLanguage(value) {
-  const normalized = String(value || "").trim().toLowerCase();
+  const text = limitFeedbackLanguage(value);
+  const normalized = text.toLowerCase();
   if (normalized === "japanese") return "japanese";
+  if (normalized && normalized !== "english") return text;
   return "english";
 }
 
 function getFeedbackLanguageLabel(value) {
-  return normalizeFeedbackLanguage(value) === "japanese" ? "Japanese" : "English";
+  const language = normalizeFeedbackLanguage(value);
+  if (language === "japanese") return "Japanese";
+  if (language === "english") return "English";
+  return language;
+}
+
+function limitFeedbackLanguage(value) {
+  return String(value || "")
+    .replace(/[\u0000-\u001F\u007F]/g, " ")
+    .replace(/[<>{}\[\]`]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, MAX_FEEDBACK_LANGUAGE_LENGTH)
+    .trim();
 }
 
 function limitCustomInstructions(value) {

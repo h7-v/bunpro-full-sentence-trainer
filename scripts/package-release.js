@@ -20,7 +20,7 @@ if (currentNodeMajor < MIN_BUILD_NODE_MAJOR) {
   console.error("  nvm install 22");
   console.error("  nvm use 22");
   console.error("  npm install");
-  console.error("  npm run package:win-x64 -- 0.1.0");
+  console.error("  npm run package:win-x64 -- 0.2.0");
   process.exit(1);
 }
 
@@ -49,7 +49,7 @@ if (!requestedTarget || (!TARGETS[requestedTarget] && requestedTarget !== "all")
   console.error(`Usage: node scripts/package-release.js ${Object.keys(TARGETS).join("|")}|all x.x.x`);
   console.error("");
   console.error("Example:");
-  console.error("  npm run package:win-x64 -- 0.1.0");
+  console.error("  npm run package:win-x64 -- 0.2.0");
   process.exit(1);
 }
 
@@ -57,7 +57,7 @@ if (!VERSION_PATTERN.test(releaseVersion || "")) {
   console.error("A release version is required and must use x.x.x format.");
   console.error("");
   console.error("Example:");
-  console.error("  npm run package:all -- 0.1.0");
+  console.error("  npm run package:all -- 0.2.0");
   process.exit(1);
 }
 
