@@ -89,7 +89,7 @@ LLM base URL: https://api.openai.com/v1
 LLM model: gpt-5.4-mini
 ```
 
-OpenAI API usage is billed separately from ChatGPT Plus/Pro.
+OpenAI API usage is billed separately from ChatGPT Plus/Pro. As of July 2026, about 5 USD of OpenAI API credit should grade roughly 1,500 questions with `gpt-5.4-mini`, depending on sentence length, response length, and current model prices. Check the current [OpenAI API pricing](https://platform.openai.com/docs/pricing) before relying on this estimate.
 
 If you choose Gemini, the app can use Gemini's OpenAI-compatible endpoint:
 
@@ -278,7 +278,7 @@ For Gemini, check that:
 
 ChatGPT Plus/Pro does not include OpenAI API usage.
 
-If you use OpenAI and receive a quota error, add API credit in the OpenAI developer billing page. About 5 USD should cover roughly 2,000 graded questions, depending on model prices and sentence length.
+If you use OpenAI and receive a quota error, add API credit in the OpenAI developer billing page. As of July 2026, about 5 USD should cover roughly 1,500 graded questions with `gpt-5.4-mini`, depending on sentence length, response length, and current model prices.
 
 ### Anki Import Cannot Connect
 
