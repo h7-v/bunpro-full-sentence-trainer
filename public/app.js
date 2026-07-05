@@ -1300,6 +1300,7 @@ function renderDrill(verdict) {
     return;
   }
   drillForm.classList.remove("hidden");
+  drillInput.focus();
 }
 
 function checkDrillAnswer(event) {
