@@ -26,6 +26,7 @@ const referenceSentenceText = document.querySelector("#referenceSentenceText");
 const correctionText = document.querySelector("#correctionText");
 const drillForm = document.querySelector("#drillForm");
 const drillInput = document.querySelector("#drillInput");
+const drillButton = document.querySelector("#drillButton");
 const drillFeedback = document.querySelector("#drillFeedback");
 const retryDelayInput = document.querySelector("#retryDelayInput");
 const retryStatus = document.querySelector("#retryStatus");
@@ -225,6 +226,7 @@ answerForm.addEventListener("submit", gradeAnswer);
 drillForm.addEventListener("submit", checkDrillAnswer);
 hintToggle.addEventListener("change", updateHintPreference);
 answerInput.addEventListener("input", saveCurrentDraft);
+answerInput.addEventListener("keydown", focusDrillFromAnswerOnTab);
 drillInput.addEventListener("input", saveCurrentDraft);
 retryDelayInput.addEventListener("change", updateRetryDelayPreference);
 jlptFilterOptions.addEventListener("change", updateJlptFilterPreference);
@@ -1089,7 +1091,7 @@ function updateJlptFilterPreference(event) {
     checkedInputs.push(event.target);
   }
   selectedPracticeFilters = new Set(checkedInputs.map((input) => input.value));
-  resetSessionHistory();
+  resetSessionForFilterChange();
   void showNextSentence();
 }
 
@@ -1208,6 +1210,7 @@ function renderSessionEntry(entry, options = {}) {
     drillInput.value = entry.drillAnswer || "";
     drillFeedback.textContent = entry.drillFeedback || "";
     drillFeedback.className = entry.drillFeedbackClass || "";
+    renderDrillCompletion(entry);
   }
 
   updateNavigationState();
@@ -1220,6 +1223,7 @@ function renderSentence(sentence, options = {}) {
   currentCorrectAnswers = [];
   answerForm.classList.remove("correct-active");
   gradeButton.textContent = "Grade";
+  drillButton.textContent = "Check";
   answerInput.value = "";
   drillInput.value = "";
   sourceContext.textContent = sentence.sourceContext || "From imported sentences";
@@ -1247,6 +1251,7 @@ function renderEmptySentenceState() {
   answerForm.classList.remove("retry-active");
   answerForm.classList.remove("correct-active");
   gradeButton.textContent = "Grade";
+  drillButton.textContent = "Check";
   sourceContext.textContent = "Import sentences to begin.";
   englishPrompt.textContent = "Import Bunpro, Anki, or CSV sentences to begin.";
   grammarMeaning.textContent = "";
@@ -1288,6 +1293,8 @@ function renderGrade(result) {
 function renderDrill(verdict) {
   drillInput.value = "";
   drillFeedback.textContent = "";
+  drillFeedback.className = "";
+  drillButton.textContent = "Check";
   if (verdict === "correct") {
     drillForm.classList.add("hidden");
     return;
@@ -1297,18 +1304,28 @@ function renderDrill(verdict) {
 
 function checkDrillAnswer(event) {
   event.preventDefault();
+  const entry = getCurrentEntry();
+  if (entry?.drillComplete) {
+    void showNextSentence();
+    return;
+  }
+
   const typedAnswer = normalizeAnswer(drillInput.value);
   const matches = currentCorrectAnswers.some((answer) => normalizeAnswer(answer) === typedAnswer);
 
   if (matches) {
+    if (entry) entry.drillComplete = true;
     drillFeedback.textContent = "Correct. Nice, lock it in.";
     drillFeedback.className = "drill-ok";
+    drillButton.textContent = "Next";
     saveCurrentDraft();
     return;
   }
 
+  if (entry) entry.drillComplete = false;
   drillFeedback.textContent = "Not quite. Use one of the correct answers and try again.";
   drillFeedback.className = "drill-miss";
+  drillButton.textContent = "Check";
   saveCurrentDraft();
 }
 
@@ -1324,7 +1341,8 @@ function createSessionEntry(sentence, options = {}) {
     answered: false,
     drillAnswer: "",
     drillFeedback: "",
-    drillFeedbackClass: ""
+    drillFeedbackClass: "",
+    drillComplete: false
   };
 }
 
@@ -1334,6 +1352,17 @@ function resetSessionHistory() {
   answeredThisSessionCount = 0;
   retryQueue = [];
   recentQuestionIds = [];
+  renderAnsweredSessionCount();
+  updateNavigationState();
+  updateRetryStatus();
+}
+
+function resetSessionForFilterChange() {
+  sessionHistory = [];
+  sessionIndex = -1;
+  recentQuestionIds = [];
+  pruneRetryQueueForSelectedFilters();
+  renderEmptySentenceState();
   renderAnsweredSessionCount();
   updateNavigationState();
   updateRetryStatus();
@@ -1367,6 +1396,11 @@ function saveCurrentDraft() {
   entry.drillFeedbackClass = drillFeedback.className;
 }
 
+function renderDrillCompletion(entry) {
+  if (!entry?.grade || entry.grade.verdict === "correct") return;
+  drillButton.textContent = entry.drillComplete ? "Next" : "Check";
+}
+
 function scheduleRetryForEntry(entry, result) {
   clearRetryForEntry(entry);
   if (result.verdict === "correct") {
@@ -1390,6 +1424,10 @@ function scheduleRetryForEntry(entry, result) {
 
 function clearRetryForEntry(entry) {
   retryQueue = retryQueue.filter((retry) => retry.sourceEntryId !== entry.id);
+}
+
+function pruneRetryQueueForSelectedFilters() {
+  retryQueue = retryQueue.filter((retry) => selectedPracticeFilters.has(getSentencePracticeFilterId(retry.sentence)));
 }
 
 function takeDueRetry() {
@@ -1496,6 +1534,12 @@ function updateRetryDelayPreference() {
   retryDelayInput.value = delay;
   localStorage.setItem("bunproTrainer.retryDelayMinutes", String(delay));
   updateRetryStatus();
+}
+
+function focusDrillFromAnswerOnTab(event) {
+  if (event.key !== "Tab" || event.shiftKey || drillForm.classList.contains("hidden")) return;
+  event.preventDefault();
+  drillInput.focus();
 }
 
 function renderHintVisibility() {
