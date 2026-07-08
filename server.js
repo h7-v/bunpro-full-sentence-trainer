@@ -112,6 +112,12 @@ const server = http.createServer(async (req, res) => {
       return sendJson(res, 200, result);
     }
 
+    if (req.method === "POST" && url.pathname === "/api/llm/test") {
+      const body = await readJson(req);
+      const result = await testLlmConnection(body);
+      return sendJson(res, 200, result);
+    }
+
     if (req.method === "GET" && url.pathname === "/api/sentences") {
       if (getAllSentences().length === 0 && config.bunproToken) {
         await syncBunpro();
@@ -1020,22 +1026,86 @@ async function gradeAnswer(body) {
   return result;
 }
 
-function hasLlmCredentials() {
-  return Boolean(config.llmApiKey) || isLocalLlmBaseUrl(config.llmBaseUrl);
+function hasLlmCredentials(settings = config) {
+  return Boolean(settings.llmApiKey) || isLocalLlmBaseUrl(settings.llmBaseUrl);
 }
 
-function createLlmHeaders() {
+function createLlmHeaders(settings = config) {
   const headers = {
     "Content-Type": "application/json"
   };
-  if (config.llmApiKey) {
-    headers.Authorization = `Bearer ${config.llmApiKey}`;
+  if (settings.llmApiKey) {
+    headers.Authorization = `Bearer ${settings.llmApiKey}`;
   }
   return headers;
 }
 
-function buildLlmUrl(pathname) {
-  return `${config.llmBaseUrl}${pathname}`;
+function buildLlmUrl(pathname, settings = config) {
+  return `${settings.llmBaseUrl}${pathname}`;
+}
+
+async function testLlmConnection(body = {}) {
+  const settings = {
+    llmBaseUrl: stripTrailingSlash(trimString(body?.llmBaseUrl)) || config.llmBaseUrl,
+    llmApiKey: trimString(body?.llmApiKey) || config.llmApiKey,
+    llmModel: trimString(body?.llmModel) || config.llmModel
+  };
+
+  if (!hasLlmCredentials(settings)) {
+    const err = new Error("LLM API key is not configured.");
+    err.statusCode = 400;
+    err.publicMessage = "LLM connection test failed.";
+    err.publicDetail = "Save an LLM API key first, or use a local LLM_BASE_URL that does not require a key.";
+    throw err;
+  }
+
+  const response = await fetch(buildLlmUrl("/chat/completions", settings), {
+    method: "POST",
+    headers: createLlmHeaders(settings),
+    body: JSON.stringify({
+      model: settings.llmModel,
+      messages: [
+        {
+          role: "system",
+          content: "Reply only with one valid JSON object. Do not wrap it in Markdown."
+        },
+        {
+          role: "user",
+          content: JSON.stringify({
+            task: "Connection test",
+            responseSchema: { ok: true }
+          })
+        }
+      ],
+      temperature: 0
+    })
+  });
+
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const err = new Error("LLM connection test failed.");
+    err.statusCode = response.status;
+    err.publicMessage = "LLM connection test failed.";
+    err.publicDetail = payload.error?.message || response.statusText;
+    throw err;
+  }
+
+  const text = getChatCompletionText(payload);
+  try {
+    parseJsonObject(text);
+  } catch {
+    const err = new Error("LLM connection test failed.");
+    err.statusCode = 502;
+    err.publicMessage = "LLM connection test failed.";
+    err.publicDetail = "The provider responded, but the model did not return valid JSON.";
+    throw err;
+  }
+
+  return {
+    ok: true,
+    model: settings.llmModel,
+    llmBaseUrl: settings.llmBaseUrl
+  };
 }
 
 function isLocalLlmBaseUrl(baseUrl) {

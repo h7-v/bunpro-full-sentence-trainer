@@ -282,6 +282,10 @@
                   </span>
                 </label>
               </div>
+              <div class="other-setting-group">
+                <button id="resetSessionButton" class="secondary" type="button">Reset session stats / clear retry queue</button>
+                <p id="resetSessionStatus" class="settings-status" aria-live="polite"></p>
+              </div>
             </section>
             <section id="llmSettingsPanel" class="settings-tab-panel hidden" role="tabpanel" aria-labelledby="llmTabButton" data-settings-panel="llm">
               <h3>LLM settings</h3>
@@ -300,7 +304,10 @@
                   LLM model
                   <input id="llmModelInput" type="text" autocomplete="off" spellcheck="false" placeholder="gemini-3.5-flash">
                 </label>
-                <button id="saveLlmSettingsButton" class="secondary" type="submit">Save LLM settings</button>
+                <div class="settings-button-row">
+                  <button id="saveLlmSettingsButton" class="secondary" type="submit">Save LLM settings</button>
+                  <button id="testLlmSettingsButton" class="secondary" type="button">Test model connection</button>
+                </div>
                 <p class="settings-note">Saved values go to `.env`. Secret values are not shown again after saving.</p>
                 <p id="llmSettingsStatus" class="settings-status" aria-live="polite"></p>
               </form>

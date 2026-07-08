@@ -455,6 +455,12 @@ summary {
   gap: 10px;
 }
 
+.settings-button-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
 .settings-field,
 .anki-field {
   display: grid;

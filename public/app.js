@@ -47,6 +47,8 @@ const setupCsvButton = document.querySelector("#setupCsvButton");
 const startDemoSentencesToggle = document.querySelector("#startDemoSentencesToggle");
 const demoSentencesToggle = document.querySelector("#demoSentencesToggle");
 const demoSentencesStatus = document.querySelector("#demoSentencesStatus");
+const resetSessionButton = document.querySelector("#resetSessionButton");
+const resetSessionStatus = document.querySelector("#resetSessionStatus");
 const bunproSettingsForm = document.querySelector("#bunproSettingsForm");
 const bunproTokenInput = document.querySelector("#bunproTokenInput");
 const saveBunproTokenButton = document.querySelector("#saveBunproTokenButton");
@@ -56,6 +58,7 @@ const llmBaseUrlInput = document.querySelector("#llmBaseUrlInput");
 const llmApiKeyInput = document.querySelector("#llmApiKeyInput");
 const llmModelInput = document.querySelector("#llmModelInput");
 const saveLlmSettingsButton = document.querySelector("#saveLlmSettingsButton");
+const testLlmSettingsButton = document.querySelector("#testLlmSettingsButton");
 const llmSettingsStatus = document.querySelector("#llmSettingsStatus");
 const feedbackSettingsForm = document.querySelector("#feedbackSettingsForm");
 const feedbackLanguageInputs = Array.from(document.querySelectorAll("input[name='feedbackLanguage']"));
@@ -244,8 +247,10 @@ setupBunproButton.addEventListener("click", () => showSettingsTab("bunpro"));
 setupCsvButton.addEventListener("click", () => showSettingsTab("csv"));
 startDemoSentencesToggle.addEventListener("change", updateDemoSentencesPreference);
 demoSentencesToggle.addEventListener("change", updateDemoSentencesPreference);
+resetSessionButton.addEventListener("click", resetCurrentSession);
 bunproSettingsForm.addEventListener("submit", saveBunproSettings);
 llmSettingsForm.addEventListener("submit", saveLlmSettings);
+testLlmSettingsButton.addEventListener("click", testLlmSettings);
 feedbackSettingsForm.addEventListener("submit", saveFeedbackSettings);
 for (const input of feedbackLanguageInputs) {
   input.addEventListener("change", updateCustomFeedbackLanguageVisibility);
@@ -669,6 +674,28 @@ async function saveLlmSettings(event) {
     renderStatus(status);
     updateSettingsPlaceholders(status);
     llmSettingsStatus.textContent = "LLM settings saved to .env.";
+  } catch (error) {
+    llmSettingsStatus.textContent = error.message;
+  } finally {
+    setSettingsBusy(false);
+  }
+}
+
+async function testLlmSettings() {
+  const payload = {
+    llmBaseUrl: llmBaseUrlInput.value.trim(),
+    llmApiKey: llmApiKeyInput.value.trim(),
+    llmModel: llmModelInput.value.trim()
+  };
+
+  setSettingsBusy(true, "Testing LLM connection...");
+  try {
+    const result = await api("/api/llm/test", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    llmSettingsStatus.textContent = `Model connection OK: ${result.model || "configured model"}.`;
   } catch (error) {
     llmSettingsStatus.textContent = error.message;
   } finally {
@@ -1358,6 +1385,11 @@ function resetSessionHistory() {
   updateRetryStatus();
 }
 
+function resetCurrentSession() {
+  resetSessionHistory();
+  resetSessionStatus.textContent = "Session stats and retry queue reset.";
+}
+
 function resetSessionForFilterChange() {
   sessionHistory = [];
   sessionIndex = -1;
@@ -1675,6 +1707,7 @@ function setCsvControlsDisabled(isDisabled) {
 function setSettingsBusy(isBusy, message) {
   saveBunproTokenButton.disabled = isBusy;
   saveLlmSettingsButton.disabled = isBusy;
+  testLlmSettingsButton.disabled = isBusy;
   saveFeedbackSettingsButton.disabled = isBusy;
   if (message) {
     if (message.includes("Bunpro")) bunproSettingsStatus.textContent = message;
