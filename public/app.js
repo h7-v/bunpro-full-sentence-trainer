@@ -49,6 +49,8 @@ const demoSentencesToggle = document.querySelector("#demoSentencesToggle");
 const demoSentencesStatus = document.querySelector("#demoSentencesStatus");
 const resetSessionButton = document.querySelector("#resetSessionButton");
 const resetSessionStatus = document.querySelector("#resetSessionStatus");
+const grammarRotationToggle = document.querySelector("#grammarRotationToggle");
+const grammarRotationStatus = document.querySelector("#grammarRotationStatus");
 const bunproSettingsForm = document.querySelector("#bunproSettingsForm");
 const bunproTokenInput = document.querySelector("#bunproTokenInput");
 const saveBunproTokenButton = document.querySelector("#saveBunproTokenButton");
@@ -91,6 +93,7 @@ const csvStatus = document.querySelector("#csvStatus");
 const csvPreview = document.querySelector("#csvPreview");
 const gettingStartedSeenKey = "jfst-getting-started-seen";
 const demoSentencesEnabledKey = "jfst-demo-sentences-enabled";
+const grammarRotationEnabledKey = "jfst-grammar-rotation-enabled";
 const demoSentences = [
   {
     id: "demo:n5:1",
@@ -213,6 +216,7 @@ let nextSessionEntryId = 1;
 let answeredThisSessionCount = 0;
 let retryQueue = [];
 let recentQuestionIds = [];
+let answeredGrammarPointIds = new Set();
 let sentencePool = [];
 let availablePracticeFilters = [];
 let selectedPracticeFilters = new Set();
@@ -248,6 +252,7 @@ setupCsvButton.addEventListener("click", () => showSettingsTab("csv"));
 startDemoSentencesToggle.addEventListener("change", updateDemoSentencesPreference);
 demoSentencesToggle.addEventListener("change", updateDemoSentencesPreference);
 resetSessionButton.addEventListener("click", resetCurrentSession);
+grammarRotationToggle.addEventListener("change", updateGrammarRotationPreference);
 bunproSettingsForm.addEventListener("submit", saveBunproSettings);
 llmSettingsForm.addEventListener("submit", saveLlmSettings);
 testLlmSettingsButton.addEventListener("click", testLlmSettings);
@@ -273,6 +278,7 @@ async function boot() {
     initializeHintPreference();
     initializeRetryDelayPreference();
     initializeDemoSentencesPreference();
+    initializeGrammarRotationPreference();
     const status = await api("/api/status");
     renderStatus(status);
     updateSettingsPlaceholders(status);
@@ -1081,6 +1087,7 @@ async function loadSentencePool(options = {}) {
     ]);
   }
   renderJlptFilter(availablePracticeFilters, options);
+  renderGrammarRotationStatus();
 }
 
 function renderJlptFilter(filters, options = {}) {
@@ -1380,9 +1387,11 @@ function resetSessionHistory() {
   answeredThisSessionCount = 0;
   retryQueue = [];
   recentQuestionIds = [];
+  answeredGrammarPointIds = new Set();
   renderAnsweredSessionCount();
   updateNavigationState();
   updateRetryStatus();
+  renderGrammarRotationStatus();
 }
 
 function resetCurrentSession() {
@@ -1394,11 +1403,13 @@ function resetSessionForFilterChange() {
   sessionHistory = [];
   sessionIndex = -1;
   recentQuestionIds = [];
+  pruneAnsweredGrammarPointsForSelectedFilters();
   pruneRetryQueueForSelectedFilters();
   renderEmptySentenceState();
   renderAnsweredSessionCount();
   updateNavigationState();
   updateRetryStatus();
+  renderGrammarRotationStatus();
 }
 
 function getCurrentEntry() {
@@ -1409,6 +1420,7 @@ function markEntryAnswered(entry) {
   if (entry.answered) return;
   entry.answered = true;
   answeredThisSessionCount += 1;
+  rememberAnsweredGrammarPoint(entry.sentence);
   renderAnsweredSessionCount();
 }
 
@@ -1522,6 +1534,11 @@ function initializeDemoSentencesPreference() {
   renderDemoSentencesStatus();
 }
 
+function initializeGrammarRotationPreference() {
+  grammarRotationToggle.checked = isGrammarRotationEnabled();
+  renderGrammarRotationStatus();
+}
+
 function updateHintPreference() {
   localStorage.setItem("bunproTrainer.showGrammarHints", String(hintToggle.checked));
   renderHintVisibility();
@@ -1555,6 +1572,33 @@ function renderDemoSentencesStatus() {
   demoSentencesStatus.textContent = isDemoSentencesEnabled()
     ? `${demoSentences.length} demo sentences enabled.`
     : "Demo sentences disabled.";
+}
+
+function updateGrammarRotationPreference() {
+  localStorage.setItem(grammarRotationEnabledKey, String(grammarRotationToggle.checked));
+  answeredGrammarPointIds = new Set();
+  renderGrammarRotationStatus();
+}
+
+function isGrammarRotationEnabled() {
+  return localStorage.getItem(grammarRotationEnabledKey) === "true";
+}
+
+function renderGrammarRotationStatus() {
+  if (!isGrammarRotationEnabled()) {
+    grammarRotationStatus.textContent = "Bunpro grammar point rotation disabled.";
+    return;
+  }
+
+  const availableGrammarPointIds = getAvailableGrammarPointIds(getFilteredSentences());
+  if (availableGrammarPointIds.size === 0) {
+    grammarRotationStatus.textContent = "No Bunpro grammar points in the current practice filters.";
+    return;
+  }
+
+  pruneAnsweredGrammarPoints(availableGrammarPointIds);
+  grammarRotationStatus.textContent =
+    `${answeredGrammarPointIds.size} / ${availableGrammarPointIds.size} Bunpro grammar points answered this cycle.`;
 }
 
 function setDemoSentencesCheckboxes(isEnabled) {
@@ -1611,6 +1655,46 @@ function updateRetryStatus() {
   updateNavigationState();
 }
 
+function rememberAnsweredGrammarPoint(sentence) {
+  if (!isGrammarRotationEnabled()) return;
+  const grammarPointId = getSentenceGrammarPointId(sentence);
+  if (!grammarPointId) return;
+
+  const availableGrammarPointIds = getAvailableGrammarPointIds(getFilteredSentences());
+  if (availableGrammarPointIds.size === 0) return;
+
+  answeredGrammarPointIds.add(grammarPointId);
+  if (answeredGrammarPointIds.size >= availableGrammarPointIds.size) {
+    answeredGrammarPointIds = new Set();
+  } else {
+    pruneAnsweredGrammarPoints(availableGrammarPointIds);
+  }
+  renderGrammarRotationStatus();
+}
+
+function pruneAnsweredGrammarPointsForSelectedFilters() {
+  pruneAnsweredGrammarPoints(getAvailableGrammarPointIds(getFilteredSentences()));
+}
+
+function pruneAnsweredGrammarPoints(availableGrammarPointIds) {
+  answeredGrammarPointIds = new Set(
+    Array.from(answeredGrammarPointIds).filter((id) => availableGrammarPointIds.has(id))
+  );
+}
+
+function getAvailableGrammarPointIds(sentences) {
+  const ids = new Set();
+  for (const sentence of sentences) {
+    const id = getSentenceGrammarPointId(sentence);
+    if (id) ids.add(id);
+  }
+  return ids;
+}
+
+function getSentenceGrammarPointId(sentence) {
+  return sentence?.grammarPointId ? String(sentence.grammarPointId) : "";
+}
+
 function formatRemainingTime(milliseconds) {
   const seconds = Math.max(1, Math.ceil(milliseconds / 1000));
   if (seconds < 60) return `${seconds}s`;
@@ -1627,12 +1711,29 @@ function chooseRandom(items) {
 }
 
 function chooseRandomQuestion(sentences) {
-  const recentLimit = Math.max(0, Math.min(9, sentences.length - 1));
-  if (recentLimit === 0) return chooseRandom(sentences);
+  const candidates = getGrammarRotationCandidates(sentences);
+  const recentLimit = Math.max(0, Math.min(9, candidates.length - 1));
+  if (recentLimit === 0) return chooseRandom(candidates);
 
   const blockedIds = new Set(recentQuestionIds.slice(-recentLimit));
-  const candidates = sentences.filter((sentence) => !blockedIds.has(getSentenceQuestionId(sentence)));
-  return chooseRandom(candidates.length > 0 ? candidates : sentences);
+  const recentCandidates = candidates.filter((sentence) => !blockedIds.has(getSentenceQuestionId(sentence)));
+  return chooseRandom(recentCandidates.length > 0 ? recentCandidates : candidates);
+}
+
+function getGrammarRotationCandidates(sentences) {
+  if (!isGrammarRotationEnabled()) return sentences;
+
+  const availableGrammarPointIds = getAvailableGrammarPointIds(sentences);
+  if (availableGrammarPointIds.size === 0) return sentences;
+
+  pruneAnsweredGrammarPoints(availableGrammarPointIds);
+
+  const candidates = sentences.filter((sentence) => {
+    const grammarPointId = getSentenceGrammarPointId(sentence);
+    return !grammarPointId || !answeredGrammarPointIds.has(grammarPointId);
+  });
+
+  return candidates.length > 0 ? candidates : sentences;
 }
 
 function rememberAskedSentence(sentence) {

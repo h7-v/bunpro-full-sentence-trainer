@@ -574,6 +574,10 @@ summary {
   margin-top: 18px;
 }
 
+.bunpro-rotation-setting {
+  margin-top: 14px;
+}
+
 .token-help {
   margin: 0;
   border: 1px solid var(--line);

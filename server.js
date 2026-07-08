@@ -970,6 +970,7 @@ async function gradeAnswer(body) {
       "Use 0-6 for answers with wrong meaning, missing target grammar, or major grammar problems.",
       "Reject answers with major grammar errors, wrong meaning, or missing target grammar.",
       "Return concise feedback suitable for a learner.",
+      "When the answer is not correct and a target grammar point is provided, explain how and why that grammar point fits into the corrected sentence.",
       `Write feedback and any learner-facing explanation in ${feedbackLanguageLabel}.`,
       `Do not write learner-facing feedback in English or Japanese unless the requested feedback language is English or Japanese.`,
       "Keep JSON object keys in English, regardless of feedback language.",
@@ -996,7 +997,7 @@ async function gradeAnswer(body) {
       messages: [
         {
           role: "system",
-          content: `You are a careful Japanese grammar tutor. Write all learner-facing feedback in ${feedbackLanguageLabel}. Do not use English or Japanese for learner-facing feedback unless that is the requested feedback language. Missing final Japanese punctuation such as 。 or ？ should not affect the grade when the answer is otherwise correct. If a question correctly uses か, do not penalize a missing final question mark. Reply only with one valid JSON object. Do not wrap it in Markdown.`
+          content: `You are a careful Japanese grammar tutor. Write all learner-facing feedback in ${feedbackLanguageLabel}. Do not use English or Japanese for learner-facing feedback unless that is the requested feedback language. When an answer is not correct and a target grammar point is provided, explain how and why that grammar point fits into the corrected sentence. Missing final Japanese punctuation such as 。 or ？ should not affect the grade when the answer is otherwise correct. If a question correctly uses か, do not penalize a missing final question mark. Reply only with one valid JSON object. Do not wrap it in Markdown.`
         },
         {
           role: "user",
