@@ -14,6 +14,7 @@ const SYNC_CACHE_FILE = path.join(CACHE_DIR, "bunpro-sync.json");
 const ANKI_CACHE_PREFIX = "anki-deck-";
 const CSV_CACHE_PREFIX = "csv-file-";
 const UPDATES_DIR = path.join(ROOT, "updates");
+const INSTANCE_LOCK_FILE = path.join(UPDATES_DIR, "server-instance.json");
 const BUNPRO_BASE_URL = "https://api.bunpro.jp/api/frontend";
 const ANKI_CONNECT_URL = process.env.ANKI_CONNECT_URL || "http://127.0.0.1:8765";
 const APP_VERSION = readAppVersion();
@@ -214,12 +215,19 @@ const server = http.createServer(async (req, res) => {
 });
 
 server.on("error", handleServerError);
-startServer(config.port);
+process.on("exit", clearInstanceLock);
+void initializeServer();
+
+async function initializeServer() {
+  if (await openExistingInstance()) return;
+  startServer(config.port);
+}
 
 function startServer(port) {
   config.port = port;
   server.listen(config.port, config.host, () => {
-    const appUrl = `http://${config.host}:${config.port}`;
+    writeInstanceLock();
+    const appUrl = getAppUrl(config.host, config.port);
     console.log(`Japanese Full Sentence Trainer running at ${appUrl}`);
     openBrowser(appUrl);
   });
@@ -230,7 +238,9 @@ function handleServerError(error) {
     && !process.env.PORT
     && config.port < DEFAULT_PORT + 20;
   if (canTryNextPort) {
-    startServer(config.port + 1);
+    openExistingInstance().then((openedExisting) => {
+      if (!openedExisting) startServer(config.port + 1);
+    });
     return;
   }
 
@@ -259,6 +269,97 @@ function openBrowser(appUrl) {
     console.log(`Open this address in your browser: ${appUrl}`);
   });
   child.unref();
+}
+
+async function openExistingInstance() {
+  const lock = readInstanceLock();
+  if (!lock || Number(lock.pid) === process.pid) return false;
+
+  const port = Number(lock.port || 0);
+  if (!port || !isProcessRunning(lock.pid)) {
+    removeInstanceLock();
+    return false;
+  }
+
+  const appUrl = getAppUrl(lock.host || config.host, port);
+  if (!(await isServerResponding(appUrl))) {
+    removeInstanceLock();
+    return false;
+  }
+
+  console.log(`Japanese Full Sentence Trainer is already running at ${appUrl}`);
+  openBrowser(appUrl);
+  process.exitCode = 0;
+  setTimeout(() => process.exit(0), 250);
+  return true;
+}
+
+async function isServerResponding(appUrl) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 750);
+  try {
+    const response = await fetch(`${appUrl}/api/status`, { signal: controller.signal });
+    return response.ok;
+  } catch {
+    return false;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+function writeInstanceLock() {
+  try {
+    fs.mkdirSync(UPDATES_DIR, { recursive: true });
+    fs.writeFileSync(INSTANCE_LOCK_FILE, JSON.stringify({
+      pid: process.pid,
+      host: config.host,
+      port: config.port,
+      appVersion: APP_VERSION,
+      startedAt: new Date().toISOString()
+    }, null, 2));
+  } catch {
+    // The lock is a convenience for duplicate launches, not required for serving.
+  }
+}
+
+function readInstanceLock() {
+  try {
+    if (!fs.existsSync(INSTANCE_LOCK_FILE)) return null;
+    return JSON.parse(fs.readFileSync(INSTANCE_LOCK_FILE, "utf8"));
+  } catch {
+    return null;
+  }
+}
+
+function clearInstanceLock() {
+  const lock = readInstanceLock();
+  if (Number(lock?.pid) !== process.pid) return;
+  removeInstanceLock();
+}
+
+function removeInstanceLock() {
+  try {
+    fs.rmSync(INSTANCE_LOCK_FILE, { force: true });
+  } catch {
+    // Ignore stale lock cleanup failures.
+  }
+}
+
+function isProcessRunning(pid) {
+  try {
+    process.kill(Number(pid), 0);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function getAppUrl(host, port) {
+  return `http://${getBrowserHost(host)}:${port}`;
+}
+
+function getBrowserHost(host) {
+  return ["0.0.0.0", "::", ""].includes(String(host || "")) ? "127.0.0.1" : host;
 }
 
 function writeStartupError(error) {
