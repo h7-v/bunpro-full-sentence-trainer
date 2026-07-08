@@ -103,15 +103,53 @@ function findReleaseRoot(extractDir) {
 
 function restartApp(targetDir, restart) {
   const restartPath = path.join(targetDir, restart);
-  const isWindowsCommand = process.platform === "win32" && restart.toLowerCase().endsWith(".cmd");
-  const command = isWindowsCommand ? "cmd.exe" : restartPath;
-  const args = isWindowsCommand ? ["/c", restartPath] : [];
+  let command;
+  let args;
+
+  if (process.platform === "win32") {
+    command = "cmd.exe";
+    args = ["/c", "start", "\"Japanese Full Sentence Trainer\"", restartPath];
+  } else if (process.platform === "darwin") {
+    command = "open";
+    args = ["-a", "Terminal", restartPath];
+  } else {
+    const shellCommand = `cd ${quoteShell(targetDir)} && ${quoteShell(restartPath)}`;
+    const terminal = findLinuxTerminal();
+    if (terminal) {
+      command = terminal.command;
+      args = terminal.args(shellCommand);
+    } else {
+      command = restartPath;
+      args = [];
+    }
+  }
+
   const child = spawn(command, args, {
     cwd: targetDir,
     detached: true,
     stdio: "ignore"
   });
   child.unref();
+}
+
+function findLinuxTerminal() {
+  const candidates = [
+    { command: "x-terminal-emulator", args: (command) => ["-e", "sh", "-lc", command] },
+    { command: "gnome-terminal", args: (command) => ["--", "sh", "-lc", command] },
+    { command: "konsole", args: (command) => ["-e", "sh", "-lc", command] },
+    { command: "xfce4-terminal", args: (command) => ["-e", `sh -lc ${quoteShell(command)}`] },
+    { command: "xterm", args: (command) => ["-e", "sh", "-lc", command] }
+  ];
+  return candidates.find((candidate) => commandExists(candidate.command)) || null;
+}
+
+function commandExists(command) {
+  const paths = String(process.env.PATH || "").split(path.delimiter);
+  return paths.some((item) => fs.existsSync(path.join(item, command)));
+}
+
+function quoteShell(value) {
+  return `'${String(value).replace(/'/g, "'\\''")}'`;
 }
 
 function restoreExecutablePermissions(targetDir, restart) {
