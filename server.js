@@ -228,7 +228,7 @@ function startServer(port) {
   server.listen(config.port, config.host, () => {
     writeInstanceLock();
     const appUrl = getAppUrl(config.host, config.port);
-    console.log(`Japanese Full Sentence Trainer running at ${appUrl}`);
+    console.log(`Japanese Full Sentence Trainer v${APP_VERSION} running at ${appUrl}`);
     openBrowser(appUrl);
   });
 }
