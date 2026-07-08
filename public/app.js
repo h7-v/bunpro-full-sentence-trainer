@@ -318,7 +318,7 @@ function renderUpdateBanner(update) {
   updateTitle.textContent = `Update available: v${update.latestVersion}`;
   updateText.textContent = update.canInstall
     ? "Download and install now. Your .env and cache folder will be preserved."
-    : "Open the GitHub release page to download the update. Your .env and cache folder should be copied into the new release folder.";
+    : `${update.cannotInstallReason || "Automatic install is not available for this update."} Open the GitHub release page to download the update.`;
   openReleaseLink.href = update.releasePage || "https://github.com/h7-v/japanese-full-sentence-trainer/releases";
   installUpdateButton.classList.toggle("hidden", !update.canInstall);
   installUpdateButton.disabled = false;

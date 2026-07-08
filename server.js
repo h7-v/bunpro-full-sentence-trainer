@@ -406,6 +406,7 @@ async function checkForUpdate() {
     releasePage: RELEASES_URL,
     target: target?.name || null,
     assetName: null,
+    cannotInstallReason: "",
     message: ""
   };
 
@@ -430,7 +431,15 @@ async function checkForUpdate() {
     ? release.assets.find((item) => item.name === assetName)
     : null;
   result.assetName = assetName;
-  result.canInstall = Boolean(process.pkg && asset?.browser_download_url && fs.existsSync(getUpdaterPath(target)));
+  const updaterExists = fs.existsSync(getUpdaterPath(target));
+  result.canInstall = Boolean(process.pkg && asset?.browser_download_url && updaterExists);
+  if (!process.pkg) {
+    result.cannotInstallReason = "Automatic install is only available in packaged releases, not when running from source.";
+  } else if (!asset?.browser_download_url) {
+    result.cannotInstallReason = `The latest release does not include ${assetName}.`;
+  } else if (!updaterExists) {
+    result.cannotInstallReason = `The updater executable is missing from this app folder.`;
+  }
   result.message = result.canInstall
     ? `Update ${result.latestVersion} is available.`
     : `Update ${result.latestVersion} is available on GitHub.`;

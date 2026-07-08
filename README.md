@@ -405,23 +405,23 @@ Building releases requires Node.js 22 or newer because the packaging tool runs o
 Set the project version in one place first:
 
 ```sh
-npm run version:set -- 0.2.3
+npm run version:set -- 0.3.1
 ```
 
 That updates `version.json`, `package.json`, `package-lock.json`, and README release examples.
 
 ```sh
 npm install
-npm run package:mac-arm64 -- 0.2.3
-npm run package:mac-x64 -- 0.2.3
-npm run package:win-x64 -- 0.2.3
-npm run package:linux-x64 -- 0.2.3
+npm run package:mac-arm64 -- 0.3.1
+npm run package:mac-x64 -- 0.3.1
+npm run package:win-x64 -- 0.3.1
+npm run package:linux-x64 -- 0.3.1
 ```
 
 You can also build all configured targets:
 
 ```sh
-npm run package:all -- 0.2.3
+npm run package:all -- 0.3.1
 ```
 
 The version argument is required, must use `x.x.x` format, and must match `version.json`.
@@ -429,14 +429,14 @@ The version argument is required, must use `x.x.x` format, and must match `versi
 The output folders and ZIP assets are:
 
 ```text
-dist/japanese-fst-v0.2.3-win-x64
-dist/japanese-fst-v0.2.3-win-x64.zip
-dist/japanese-fst-v0.2.3-macos-arm64
-dist/japanese-fst-v0.2.3-macos-arm64.zip
-dist/japanese-fst-v0.2.3-macos-x64
-dist/japanese-fst-v0.2.3-macos-x64.zip
-dist/japanese-fst-v0.2.3-linux-x64
-dist/japanese-fst-v0.2.3-linux-x64.zip
+dist/japanese-fst-v0.3.1-win-x64
+dist/japanese-fst-v0.3.1-win-x64.zip
+dist/japanese-fst-v0.3.1-macos-arm64
+dist/japanese-fst-v0.3.1-macos-arm64.zip
+dist/japanese-fst-v0.3.1-macos-x64
+dist/japanese-fst-v0.3.1-macos-x64.zip
+dist/japanese-fst-v0.3.1-linux-x64
+dist/japanese-fst-v0.3.1-linux-x64.zip
 ```
 
 Each release folder includes a standalone executable, an updater executable, `public/`, `.env.example`, `cache/`, and `START-HERE.txt`. Windows builds also include `Start Japanese Full Sentence Trainer.cmd`.
